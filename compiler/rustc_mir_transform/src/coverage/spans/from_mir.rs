@@ -223,15 +223,14 @@ fn filtered_statement_span(statement: &Statement<'_>) -> Option<Span> {
         | StatementKind::AscribeUserType(_, _) => Some(statement.source_info.span),
 
         // Block markers are used for branch coverage, so ignore them here.
-        StatementKind::Coverage(
-            CoverageKind::BlockMarker { .. }
-            | CoverageKind::UpdateCondBitmap { .. }
-            | CoverageKind::UpdateTestVector { .. },
-        ) => None,
+        StatementKind::Coverage(CoverageKind::BlockMarker { .. }) => None,
 
         // These coverage statements should not exist prior to coverage instrumentation.
         StatementKind::Coverage(
-            CoverageKind::CounterIncrement { .. } | CoverageKind::ExpressionUsed { .. },
+            CoverageKind::CounterIncrement { .. }
+            | CoverageKind::ExpressionUsed { .. }
+            | CoverageKind::CondBitmapUpdate { .. }
+            | CoverageKind::TestVectorBitmapUpdate { .. },
         ) => bug!(
             "Unexpected coverage statement found during coverage instrumentation: {statement:?}"
         ),
@@ -388,10 +387,8 @@ pub(super) fn extract_branch_mappings(
         }
     }
 
-    branch_info
-        .branch_spans
-        .iter()
-        .filter_map(|&BranchSpan { span: raw_span, condition_info, true_marker, false_marker }| {
+    let condition_filter_map =
+        |&BranchSpan { span: raw_span, condition_info, true_marker, false_marker }| {
             // For now, ignore any branch span that was introduced by
             // expansion. This makes things like assert macros less noisy.
             if !raw_span.ctxt().outer_expn_data().is_root() {
@@ -409,10 +406,27 @@ pub(super) fn extract_branch_mappings(
                 kind: BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params: condition_info },
                 span,
             })
-        })
-        .collect::<Vec<_>>()
-}
+        };
 
-pub(super) fn extract_decision_spans(mir_body: &mir::Body<'_>) -> Option<Vec<DecisionSpan>> {
-    mir_body.coverage_branch_info.as_deref().map(|info| info.decision_spans.clone())
+    let mut next_bitmap_idx = 0;
+
+    let decision_filter_map = |&DecisionSpan { span: raw_span, conditions_num, join_marker }| {
+        let (span, _) = unexpand_into_body_span_with_visible_macro(raw_span, body_span)?;
+
+        let join_bcb = basic_coverage_blocks.bcb_from_bb(block_markers[join_marker]?)?;
+        let bitmap_idx = next_bitmap_idx;
+        next_bitmap_idx += (1_u32 << conditions_num).div_ceil(8);
+
+        Some(BcbMapping {
+            kind: BcbMappingKind::Decision { join_bcb, bitmap_idx, conditions_num },
+            span,
+        })
+    };
+
+    branch_info
+        .branch_spans
+        .iter()
+        .filter_map(condition_filter_map)
+        .chain(branch_info.decision_spans.iter().filter_map(decision_filter_map))
+        .collect::<Vec<_>>()
 }

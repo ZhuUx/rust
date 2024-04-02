@@ -1,7 +1,7 @@
 use rustc_data_structures::graph::WithNumNodes;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::mir;
-use rustc_middle::mir::coverage::{ConditionInfo, DecisionSpan};
+use rustc_middle::mir::coverage::ConditionInfo;
 use rustc_span::{BytePos, Span};
 
 use crate::coverage::graph::{BasicCoverageBlock, CoverageGraph, START_BCB};
@@ -20,6 +20,8 @@ pub(super) enum BcbMappingKind {
         false_bcb: BasicCoverageBlock,
         mcdc_params: ConditionInfo,
     },
+    /// Associates a decision with its join BCB.
+    Decision { join_bcb: BasicCoverageBlock, bitmap_idx: u32, conditions_num: u16 },
 }
 
 #[derive(Debug)]
@@ -31,7 +33,7 @@ pub(super) struct BcbMapping {
 pub(super) struct CoverageSpans {
     bcb_has_mappings: BitSet<BasicCoverageBlock>,
     mappings: Vec<BcbMapping>,
-    decisions: Vec<DecisionSpan>,
+    test_vector_bitmap_bytes: u32,
 }
 
 impl CoverageSpans {
@@ -43,8 +45,8 @@ impl CoverageSpans {
         self.mappings.iter()
     }
 
-    pub(super) fn decisions(&self) -> impl Iterator<Item = &DecisionSpan> {
-        self.decisions.iter()
+    pub(super) fn test_vector_bitmap_bytes(&self) -> u32 {
+        self.test_vector_bitmap_bytes
     }
 }
 
@@ -95,6 +97,7 @@ pub(super) fn generate_coverage_spans(
     let mut insert = |bcb| {
         bcb_has_mappings.insert(bcb);
     };
+    let mut test_vector_bitmap_bytes = 0;
     for &BcbMapping { kind, span: _ } in &mappings {
         match kind {
             BcbMappingKind::Code(bcb) => insert(bcb),
@@ -102,14 +105,17 @@ pub(super) fn generate_coverage_spans(
                 insert(true_bcb);
                 insert(false_bcb);
             }
+            BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
+                // `bcb_has_mappings` is used for inject coverage counters
+                // but they are not needed for decision BCBs.
+                // While the length of test vector bitmap should be calculated here.
+                test_vector_bitmap_bytes = test_vector_bitmap_bytes
+                    .max(bitmap_idx + (1_u32 << conditions_num as u32).div_ceil(8));
+            }
         }
     }
 
-    Some(CoverageSpans {
-        bcb_has_mappings,
-        mappings,
-        decisions: from_mir::extract_decision_spans(mir_body).unwrap_or_default(),
-    })
+    Some(CoverageSpans { bcb_has_mappings, mappings, test_vector_bitmap_bytes })
 }
 
 #[derive(Debug)]
