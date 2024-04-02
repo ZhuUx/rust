@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::mir::coverage::{
-    BlockMarkerId, BranchSpan, ConditionId, ConditionInfo, CoverageKind, DecisionSpan,
+    BlockMarkerId, BranchSpan, ConditionId, ConditionInfo, CoverageKind, DecisionInfo, DecisionSpan,
 };
 use rustc_middle::mir::{self, BasicBlock, UnOp};
 use rustc_middle::thir::{ExprId, ExprKind, LogicalOp, Thir};
@@ -106,11 +106,23 @@ impl BranchInfoBuilder {
             assert!(branch_spans.is_empty());
             return None;
         }
+        let decision_spans = mcdc_state.map(|state| state.decisions).unwrap_or_default();
+        let mcdc_bitmap_bytes_num = decision_spans
+            .last()
+            .map(|decision| {
+                decision
+                    .mcdc_params
+                    .bitmap_idx
+                    .saturating_add((1 << decision.mcdc_params.conditions_num).max(8))
+                    / 8
+            })
+            .unwrap_or_default();
 
         Some(Box::new(mir::coverage::BranchInfo {
             num_block_markers,
             branch_spans,
-            decision_spans: mcdc_state.map(|state| state.decisions).unwrap_or_default(),
+            mcdc_bitmap_bytes_num,
+            decision_spans,
         }))
     }
 }
@@ -120,7 +132,6 @@ struct MCDCState {
     decision_stack: VecDeque<ConditionInfo>,
     next_condition_id: usize,
     decisions: Vec<DecisionSpan>,
-    conditions_counter: u16,
 }
 
 impl MCDCState {
@@ -129,7 +140,6 @@ impl MCDCState {
             decision_stack: VecDeque::new(),
             next_condition_id: 0,
             decisions: vec![],
-            conditions_counter: 0,
         })
     }
 
@@ -181,12 +191,11 @@ impl MCDCState {
     fn pop_condition_info(&mut self) -> Option<ConditionInfo> {
         let condition = self.decision_stack.pop_back();
         if condition.is_some() {
-            self.conditions_counter += 1;
             if self.decision_stack.is_empty()
                 && let Some(decision) = self.decisions.last_mut()
             {
-                decision.conditions_num = self.conditions_counter;
-                self.conditions_counter = 0;
+                decision.mcdc_params.conditions_num = (self.next_condition_id - 1) as u16;
+                self.next_condition_id = 0;
             }
         }
         condition
@@ -224,7 +233,7 @@ impl Builder<'_, '_> {
             .and_then(MCDCState::pop_condition_info)
             .unwrap_or_default();
 
-        let mut inject_branch_marker = |block: BasicBlock| {
+        let mut inject_branch_marker = |block: BasicBlock, value: bool| {
             let id = branch_info.next_block_marker_id();
 
             let marker_statement = mir::Statement {
@@ -233,11 +242,22 @@ impl Builder<'_, '_> {
             };
             self.cfg.push(block, marker_statement);
 
+            if condition_info.condition_id != ConditionId::NONE {
+                let condbitmap_update_statement = mir::Statement {
+                    source_info,
+                    kind: mir::StatementKind::Coverage(CoverageKind::UpdateCondBitmap {
+                        id: condition_info.condition_id,
+                        value,
+                    }),
+                };
+                self.cfg.push(block, condbitmap_update_statement);
+            }
+
             id
         };
 
-        let true_marker = inject_branch_marker(then_block);
-        let false_marker = inject_branch_marker(else_block);
+        let true_marker = inject_branch_marker(then_block, true);
+        let false_marker = inject_branch_marker(else_block, false);
 
         branch_info.branch_spans.push(BranchSpan {
             span: source_info.span,
@@ -251,11 +271,39 @@ impl Builder<'_, '_> {
         if let Some(mcdc_state) =
             self.coverage_branch_info.as_mut().and_then(BranchInfoBuilder::get_mcdc_state_mut)
         {
-            mcdc_state
+            let bitmap_idx = mcdc_state
                 .decisions
-                .push(DecisionSpan { span: self.thir[expr_id].span, conditions_num: 0 });
+                .last()
+                .map(|decision| {
+                    decision
+                        .mcdc_params
+                        .bitmap_idx
+                        .saturating_add((1 << decision.mcdc_params.conditions_num).max(8))
+                })
+                .unwrap_or_default();
+            mcdc_state.decisions.push(DecisionSpan {
+                span: self.thir[expr_id].span,
+                mcdc_params: DecisionInfo { conditions_num: 0, bitmap_idx },
+            });
         }
     }
+
+    pub(crate) fn visit_coverage_decision_end(&mut self, join_block: BasicBlock) {
+        if let Some((span, bitmap_idx)) = self
+            .coverage_branch_info
+            .as_mut()
+            .and_then(BranchInfoBuilder::get_mcdc_state_mut)
+            .and_then(|state| state.decisions.last_mut())
+            .map(|end_decision| (end_decision.span, end_decision.mcdc_params.bitmap_idx))
+        {
+            let statement = mir::Statement {
+                source_info: self.source_info(span),
+                kind: mir::StatementKind::Coverage(CoverageKind::UpdateTestVector { bitmap_idx }),
+            };
+            self.cfg.push(join_block, statement);
+        }
+    }
+
     pub(crate) fn visit_coverage_branch_operation(&mut self, logical_op: LogicalOp) {
         if let Some(mcdc_state) =
             self.coverage_branch_info.as_mut().and_then(BranchInfoBuilder::get_mcdc_state_mut)

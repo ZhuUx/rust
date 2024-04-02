@@ -387,7 +387,7 @@ pub trait BuilderMethods<'a, 'tcx>:
         fn_name: Self::Value,
         hash: Self::Value,
         bitmap_bytes: Self::Value,
-    );
+    ) -> Self::Value;
 
     fn mcdc_condbitmap_update(
         &mut self,

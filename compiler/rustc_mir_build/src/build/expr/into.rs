@@ -114,6 +114,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 // The `then` and `else` arms have been lowered into their respective
                 // blocks, so make both of them meet up in a new block.
                 let join_block = this.cfg.start_new_block();
+                this.visit_coverage_decision_end(join_block);
                 this.cfg.goto(then_blk, source_info, join_block);
                 this.cfg.goto(else_blk, source_info, join_block);
                 join_block.unit()
@@ -186,6 +187,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 );
                 let rhs = unpack!(this.expr_into_dest(destination, continuation, rhs));
                 let target = this.cfg.start_new_block();
+                this.visit_coverage_decision_end(target);
                 this.cfg.goto(rhs, source_info, target);
                 this.cfg.goto(short_circuit, source_info, target);
                 target.unit()

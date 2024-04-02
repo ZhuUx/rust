@@ -223,7 +223,11 @@ fn filtered_statement_span(statement: &Statement<'_>) -> Option<Span> {
         | StatementKind::AscribeUserType(_, _) => Some(statement.source_info.span),
 
         // Block markers are used for branch coverage, so ignore them here.
-        StatementKind::Coverage(CoverageKind::BlockMarker { .. }) => None,
+        StatementKind::Coverage(
+            CoverageKind::BlockMarker { .. }
+            | CoverageKind::UpdateCondBitmap { .. }
+            | CoverageKind::UpdateTestVector { .. },
+        ) => None,
 
         // These coverage statements should not exist prior to coverage instrumentation.
         StatementKind::Coverage(

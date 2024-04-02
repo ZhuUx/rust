@@ -1,5 +1,4 @@
 use crate::coverageinfo::ffi::{Counter, CounterExpression, ExprKind};
-
 use rustc_data_structures::captures::Captures;
 use rustc_data_structures::fx::FxIndexSet;
 use rustc_index::bit_set::BitSet;
@@ -74,6 +73,7 @@ impl<'tcx> FunctionCoverageCollector<'tcx> {
         Self {
             function_coverage_info,
             is_used,
+
             counters_seen: BitSet::new_empty(num_counters),
             expressions_seen,
         }

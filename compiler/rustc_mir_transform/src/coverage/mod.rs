@@ -7,8 +7,6 @@ mod spans;
 #[cfg(test)]
 mod tests;
 
-use std::collections::VecDeque;
-
 use self::counters::{CounterIncrementSite, CoverageCounters};
 use self::graph::{BasicCoverageBlock, CoverageGraph};
 use self::spans::{BcbMapping, BcbMappingKind, CoverageSpans};
@@ -79,6 +77,15 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
         return;
     };
 
+    let mcdc_bitmap_bytes = coverage_spans
+        .decisions()
+        .last()
+        .map(|decision| {
+            (decision.mcdc_params.bitmap_idx + (1 << decision.mcdc_params.conditions_num).max(8))
+                / 8
+        })
+        .unwrap_or_default();
+
     ////////////////////////////////////////////////////
     // Create an optimized mix of `Counter`s and `Expression`s for the `CoverageGraph`. Ensure
     // every coverage span has a `Counter` or `Expression` assigned to its `BasicCoverageBlock`
@@ -105,6 +112,7 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
     mir_body.function_coverage_info = Some(Box::new(FunctionCoverageInfo {
         function_source_hash: hir_info.function_source_hash,
         num_counters: coverage_counters.num_counters(),
+        mcdc_bitmap_bytes,
         expressions: coverage_counters.into_expressions(),
         mappings,
     }));
@@ -140,29 +148,12 @@ fn create_mappings<'tcx>(
 
     let mut mappings = Vec::new();
 
-    let mut ignored_conditions = VecDeque::new();
-    let mut next_decision_bitmap_idx = 0;
-    let mut decision_begin_condition: usize = 1;
     for decision in coverage_spans.decisions() {
-        let conditions_num = decision.conditions_num as usize;
-        if conditions_num > 6 {
-            for cond_offset in 0..conditions_num {
-                ignored_conditions
-                    .push_back(ConditionId::from(decision_begin_condition + cond_offset as usize));
-            }
-            todo!("emit a warning");
-        } else {
-            let kind = MappingKind::Decision(DecisionInfo {
-                bitmap_idx: next_decision_bitmap_idx,
-                conditions_num: decision.conditions_num,
-            });
-            next_decision_bitmap_idx += (1 << conditions_num).max(8);
-            decision_begin_condition += conditions_num;
-            if let Some(code_region) =
-                make_code_region(source_map, file_name, decision.span, body_span)
-            {
-                mappings.push(Mapping { kind, code_region });
-            }
+        let kind = MappingKind::Decision(decision.mcdc_params);
+
+        if let Some(code_region) = make_code_region(source_map, file_name, decision.span, body_span)
+        {
+            mappings.push(Mapping { kind, code_region });
         }
     }
 
@@ -170,14 +161,7 @@ fn create_mappings<'tcx>(
         |&BcbMapping { kind: bcb_mapping_kind, span }| {
             let kind = match bcb_mapping_kind {
                 BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(bcb)),
-                BcbMappingKind::Branch { true_bcb, false_bcb, mut mcdc_params } => {
-                    if ignored_conditions
-                        .front()
-                        .is_some_and(|cond| *cond == mcdc_params.condition_id)
-                    {
-                        ignored_conditions.pop_front();
-                        mcdc_params = ConditionInfo::default();
-                    }
+                BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params } => {
                     MappingKind::Branch {
                         true_term: term_for_bcb(true_bcb),
                         false_term: term_for_bcb(false_bcb),
