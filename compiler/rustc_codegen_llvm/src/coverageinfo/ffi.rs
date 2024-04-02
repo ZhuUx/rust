@@ -1,4 +1,6 @@
-use rustc_middle::mir::coverage::{CodeRegion, CounterId, CovTerm, ExpressionId, MappingKind};
+use rustc_middle::mir::coverage::{
+    CodeRegion, ConditionInfo, CounterId, CovTerm, DecisionInfo, ExpressionId, MappingKind,
+};
 
 /// Must match the layout of `LLVMRustCounterKind`.
 #[derive(Copy, Clone, Debug)]
@@ -99,6 +101,63 @@ pub enum RegionKind {
     /// associated with two counters, each representing the number of times the
     /// expression evaluates to true or false.
     BranchRegion = 4,
+
+    /// A DecisionRegion represents a top-level boolean expression and is
+    /// associated with a variable length bitmap index and condition number.
+    MCDCDecisionRegion = 5,
+
+    /// A Branch Region can be extended to include IDs to facilitate MC/DC.
+    MCDCBranchRegion = 6,
+}
+
+pub mod mcdc {
+    use rustc_middle::mir::coverage::{ConditionInfo, DecisionInfo};
+
+    /// Must match the layout of `LLVMRustMCDCDecisionParameters`.
+    #[repr(C)]
+    #[derive(Clone, Copy, Debug)]
+    pub struct DecisionParameters {
+        bitmap_idx: u32,
+        conditions_num: u16,
+    }
+
+    // ConditionId in llvm is `unsigned int` at 18 while `int16_t` at [19](https://github.com/llvm/llvm-project/pull/81257)
+    type LLVMConditionId = i16;
+
+    /// Must match the layout of `LLVMRustMCDCBranchParameters`.
+    #[repr(C)]
+    #[derive(Clone, Copy, Debug)]
+    pub struct BranchParameters {
+        condition_id: LLVMConditionId,
+        condition_ids: [LLVMConditionId; 2],
+    }
+
+    /// Same layout with `LLVMRustMCDCParameters`
+    #[repr(C, u8)]
+    #[derive(Clone, Copy, Debug)]
+    pub enum Parameters {
+        None,
+        Decision(DecisionParameters),
+        Branch(BranchParameters),
+    }
+
+    impl From<ConditionInfo> for BranchParameters {
+        fn from(value: ConditionInfo) -> Self {
+            Self {
+                condition_id: value.condition_id.as_u32() as LLVMConditionId,
+                condition_ids: [
+                    value.false_next_id.as_u32() as LLVMConditionId,
+                    value.true_next_id.as_u32() as LLVMConditionId,
+                ],
+            }
+        }
+    }
+
+    impl From<DecisionInfo> for DecisionParameters {
+        fn from(value: DecisionInfo) -> Self {
+            Self { bitmap_idx: value.bitmap_idx, conditions_num: value.conditions_num }
+        }
+    }
 }
 
 /// This struct provides LLVM's representation of a "CoverageMappingRegion", encoded into the
@@ -122,6 +181,7 @@ pub struct CounterMappingRegion {
     /// for the false branch of the region.
     false_counter: Counter,
 
+    mcdc_params: mcdc::Parameters,
     /// An indirect reference to the source filename. In the LLVM Coverage Mapping Format, the
     /// file_id is an index into a function-specific `virtual_file_mapping` array of indexes
     /// that, in turn, are used to look up the filename for this region.
@@ -164,9 +224,20 @@ impl CounterMappingRegion {
                 end_line,
                 end_col,
             ),
-            MappingKind::Branch { true_term, false_term } => Self::branch_region(
-                Counter::from_term(true_term),
-                Counter::from_term(false_term),
+            MappingKind::Branch { true_term, false_term, mcdc_params: condition_info } => {
+                Self::branch_region(
+                    Counter::from_term(true_term),
+                    Counter::from_term(false_term),
+                    condition_info,
+                    local_file_id,
+                    start_line,
+                    start_col,
+                    end_line,
+                    end_col,
+                )
+            }
+            MappingKind::Decision(decision_info) => Self::decision_region(
+                decision_info,
                 local_file_id,
                 start_line,
                 start_col,
@@ -187,6 +258,7 @@ impl CounterMappingRegion {
         Self {
             counter,
             false_counter: Counter::ZERO,
+            mcdc_params: mcdc::Parameters::None,
             file_id,
             expanded_file_id: 0,
             start_line,
@@ -200,6 +272,35 @@ impl CounterMappingRegion {
     pub(crate) fn branch_region(
         counter: Counter,
         false_counter: Counter,
+        condition_info: ConditionInfo,
+        file_id: u32,
+        start_line: u32,
+        start_col: u32,
+        end_line: u32,
+        end_col: u32,
+    ) -> Self {
+        let mcdc_params = mcdc::Parameters::Branch(condition_info.into());
+        let kind = match mcdc_params {
+            mcdc::Parameters::None => RegionKind::BranchRegion,
+            mcdc::Parameters::Branch(_) => RegionKind::MCDCBranchRegion,
+            _ => unreachable!("invalid mcdc params for branch"),
+        };
+        Self {
+            counter,
+            false_counter,
+            mcdc_params,
+            file_id,
+            expanded_file_id: 0,
+            start_line,
+            start_col,
+            end_line,
+            end_col,
+            kind,
+        }
+    }
+
+    pub(crate) fn decision_region(
+        decision_info: DecisionInfo,
         file_id: u32,
         start_line: u32,
         start_col: u32,
@@ -207,15 +308,16 @@ impl CounterMappingRegion {
         end_col: u32,
     ) -> Self {
         Self {
-            counter,
-            false_counter,
+            counter: Counter::ZERO,
+            false_counter: Counter::ZERO,
+            mcdc_params: mcdc::Parameters::Decision(decision_info.into()),
             file_id,
             expanded_file_id: 0,
             start_line,
             start_col,
             end_line,
             end_col,
-            kind: RegionKind::BranchRegion,
+            kind: RegionKind::MCDCDecisionRegion,
         }
     }
 
@@ -233,6 +335,7 @@ impl CounterMappingRegion {
         Self {
             counter: Counter::ZERO,
             false_counter: Counter::ZERO,
+            mcdc_params: mcdc::Parameters::None,
             file_id,
             expanded_file_id,
             start_line,
@@ -256,6 +359,7 @@ impl CounterMappingRegion {
         Self {
             counter: Counter::ZERO,
             false_counter: Counter::ZERO,
+            mcdc_params: mcdc::Parameters::None,
             file_id,
             expanded_file_id: 0,
             start_line,
@@ -280,6 +384,7 @@ impl CounterMappingRegion {
         Self {
             counter,
             false_counter: Counter::ZERO,
+            mcdc_params: mcdc::Parameters::None,
             file_id,
             expanded_file_id: 0,
             start_line,

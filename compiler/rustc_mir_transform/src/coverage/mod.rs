@@ -7,6 +7,8 @@ mod spans;
 #[cfg(test)]
 mod tests;
 
+use std::collections::VecDeque;
+
 use self::counters::{CounterIncrementSite, CoverageCounters};
 use self::graph::{BasicCoverageBlock, CoverageGraph};
 use self::spans::{BcbMapping, BcbMappingKind, CoverageSpans};
@@ -136,20 +138,59 @@ fn create_mappings<'tcx>(
             .as_term()
     };
 
-    coverage_spans
-        .all_bcb_mappings()
-        .filter_map(|&BcbMapping { kind: bcb_mapping_kind, span }| {
+    let mut mappings = Vec::new();
+
+    let mut ignored_conditions = VecDeque::new();
+    let mut next_decision_bitmap_idx = 0;
+    let mut decision_begin_condition: usize = 1;
+    for decision in coverage_spans.decisions() {
+        let conditions_num = decision.conditions_num as usize;
+        if conditions_num > 6 {
+            for cond_offset in 0..conditions_num {
+                ignored_conditions
+                    .push_back(ConditionId::from(decision_begin_condition + cond_offset as usize));
+            }
+            todo!("emit a warning");
+        } else {
+            let kind = MappingKind::Decision(DecisionInfo {
+                bitmap_idx: next_decision_bitmap_idx,
+                conditions_num: decision.conditions_num,
+            });
+            next_decision_bitmap_idx += (1 << conditions_num).max(8);
+            decision_begin_condition += conditions_num;
+            if let Some(code_region) =
+                make_code_region(source_map, file_name, decision.span, body_span)
+            {
+                mappings.push(Mapping { kind, code_region });
+            }
+        }
+    }
+
+    mappings.extend(coverage_spans.all_bcb_mappings().filter_map(
+        |&BcbMapping { kind: bcb_mapping_kind, span }| {
             let kind = match bcb_mapping_kind {
                 BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(bcb)),
-                BcbMappingKind::Branch { true_bcb, false_bcb } => MappingKind::Branch {
-                    true_term: term_for_bcb(true_bcb),
-                    false_term: term_for_bcb(false_bcb),
-                },
+                BcbMappingKind::Branch { true_bcb, false_bcb, mut mcdc_params } => {
+                    if ignored_conditions
+                        .front()
+                        .is_some_and(|cond| *cond == mcdc_params.condition_id)
+                    {
+                        ignored_conditions.pop_front();
+                        mcdc_params = ConditionInfo::default();
+                    }
+                    MappingKind::Branch {
+                        true_term: term_for_bcb(true_bcb),
+                        false_term: term_for_bcb(false_bcb),
+                        mcdc_params,
+                    }
+                }
             };
             let code_region = make_code_region(source_map, file_name, span, body_span)?;
             Some(Mapping { kind, code_region })
-        })
-        .collect::<Vec<_>>()
+        },
+    ));
+
+    mappings
 }
 
 /// For each BCB node or BCB edge that has an associated coverage counter,

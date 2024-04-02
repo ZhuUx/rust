@@ -59,6 +59,23 @@ impl ExpressionId {
     pub const START: Self = Self::from_u32(0);
 }
 
+rustc_index::newtype_index! {
+    /// ID of a mcdc condition. Used by llvm to check mcdc coverage.
+    ///
+    /// Note that LLVM handles condition IDs as `int16_t`, so there is no need
+    /// to use a larger representation on the Rust side.
+    #[derive(HashStable)]
+    #[encodable]
+    #[orderable]
+    #[max = 0xFFFF]
+    #[debug_format = "ConditionId({})"]
+    pub struct ConditionId {}
+}
+
+impl ConditionId {
+    pub const NONE: Self = Self::from_u32(0);
+}
+
 /// Enum that can hold a constant zero value, the ID of an physical coverage
 /// counter, or the ID of a coverage-counter expression.
 ///
@@ -179,17 +196,21 @@ pub enum MappingKind {
     /// Associates a normal region of code with a counter/expression/zero.
     Code(CovTerm),
     /// Associates a branch region with separate counters for true and false.
-    Branch { true_term: CovTerm, false_term: CovTerm },
+    Branch { true_term: CovTerm, false_term: CovTerm, mcdc_params: ConditionInfo },
+    /// Associates a decision region with a bitmap and number of conditions.
+    Decision(DecisionInfo),
 }
 
 impl MappingKind {
     /// Iterator over all coverage terms in this mapping kind.
     pub fn terms(&self) -> impl Iterator<Item = CovTerm> {
-        let one = |a| std::iter::once(a).chain(None);
-        let two = |a, b| std::iter::once(a).chain(Some(b));
+        let zero = || None.into_iter().chain(None);
+        let one = |a| Some(a).into_iter().chain(None);
+        let two = |a, b| Some(a).into_iter().chain(Some(b));
         match *self {
             Self::Code(term) => one(term),
-            Self::Branch { true_term, false_term } => two(true_term, false_term),
+            Self::Branch { true_term, false_term, .. } => two(true_term, false_term),
+            Self::Decision(_) => zero(),
         }
     }
 
@@ -198,9 +219,12 @@ impl MappingKind {
     pub fn map_terms(&self, map_fn: impl Fn(CovTerm) -> CovTerm) -> Self {
         match *self {
             Self::Code(term) => Self::Code(map_fn(term)),
-            Self::Branch { true_term, false_term } => {
-                Self::Branch { true_term: map_fn(true_term), false_term: map_fn(false_term) }
-            }
+            Self::Branch { true_term, false_term, mcdc_params } => Self::Branch {
+                true_term: map_fn(true_term),
+                false_term: map_fn(false_term),
+                mcdc_params,
+            },
+            Self::Decision(param) => Self::Decision(param),
         }
     }
 }
@@ -234,12 +258,46 @@ pub struct BranchInfo {
     /// data structures without having to scan the entire body first.
     pub num_block_markers: usize,
     pub branch_spans: Vec<BranchSpan>,
+    pub decision_spans: Vec<DecisionSpan>,
 }
 
 #[derive(Clone, Debug)]
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct BranchSpan {
     pub span: Span,
+    pub condition_info: ConditionInfo,
     pub true_marker: BlockMarkerId,
     pub false_marker: BlockMarkerId,
+}
+
+#[derive(Copy, Clone, Debug)]
+#[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
+pub struct ConditionInfo {
+    pub condition_id: ConditionId,
+    pub true_next_id: ConditionId,
+    pub false_next_id: ConditionId,
+}
+
+impl Default for ConditionInfo {
+    fn default() -> Self {
+        Self {
+            condition_id: ConditionId::NONE,
+            true_next_id: ConditionId::NONE,
+            false_next_id: ConditionId::NONE,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+#[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
+pub struct DecisionInfo {
+    pub bitmap_idx: u32,
+    pub conditions_num: u16,
+}
+
+#[derive(Clone, Debug)]
+#[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
+pub struct DecisionSpan {
+    pub span: Span,
+    pub conditions_num: u16,
 }

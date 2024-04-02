@@ -1,7 +1,7 @@
 use rustc_data_structures::captures::Captures;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_index::IndexVec;
-use rustc_middle::mir::coverage::{BlockMarkerId, BranchSpan, CoverageKind};
+use rustc_middle::mir::coverage::{BlockMarkerId, BranchSpan, CoverageKind, DecisionSpan};
 use rustc_middle::mir::{
     self, AggregateKind, BasicBlock, FakeReadCause, Rvalue, Statement, StatementKind, Terminator,
     TerminatorKind,
@@ -387,7 +387,7 @@ pub(super) fn extract_branch_mappings(
     branch_info
         .branch_spans
         .iter()
-        .filter_map(|&BranchSpan { span: raw_span, true_marker, false_marker }| {
+        .filter_map(|&BranchSpan { span: raw_span, condition_info, true_marker, false_marker }| {
             // For now, ignore any branch span that was introduced by
             // expansion. This makes things like assert macros less noisy.
             if !raw_span.ctxt().outer_expn_data().is_root() {
@@ -401,7 +401,14 @@ pub(super) fn extract_branch_mappings(
             let true_bcb = bcb_from_marker(true_marker)?;
             let false_bcb = bcb_from_marker(false_marker)?;
 
-            Some(BcbMapping { kind: BcbMappingKind::Branch { true_bcb, false_bcb }, span })
+            Some(BcbMapping {
+                kind: BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params: condition_info },
+                span,
+            })
         })
         .collect::<Vec<_>>()
+}
+
+pub(super) fn extract_decision_spans(mir_body: &mir::Body<'_>) -> Option<Vec<DecisionSpan>> {
+    mir_body.coverage_branch_info.as_deref().map(|info| info.decision_spans.clone())
 }

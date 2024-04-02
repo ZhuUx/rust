@@ -1,10 +1,13 @@
 use std::assert_matches::assert_matches;
 use std::collections::hash_map::Entry;
+use std::collections::VecDeque;
 
 use rustc_data_structures::fx::FxHashMap;
-use rustc_middle::mir::coverage::{BlockMarkerId, BranchSpan, CoverageKind};
+use rustc_middle::mir::coverage::{
+    BlockMarkerId, BranchSpan, ConditionId, ConditionInfo, CoverageKind, DecisionSpan,
+};
 use rustc_middle::mir::{self, BasicBlock, UnOp};
-use rustc_middle::thir::{ExprId, ExprKind, Thir};
+use rustc_middle::thir::{ExprId, ExprKind, LogicalOp, Thir};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::LocalDefId;
 
@@ -16,6 +19,8 @@ pub(crate) struct BranchInfoBuilder {
 
     num_block_markers: usize,
     branch_spans: Vec<BranchSpan>,
+
+    mcdc_state: Option<MCDCState>,
 }
 
 #[derive(Clone, Copy)]
@@ -33,7 +38,12 @@ impl BranchInfoBuilder {
     /// is enabled and `def_id` represents a function that is eligible for coverage.
     pub(crate) fn new_if_enabled(tcx: TyCtxt<'_>, def_id: LocalDefId) -> Option<Self> {
         if tcx.sess.instrument_coverage_branch() && tcx.is_eligible_for_coverage(def_id) {
-            Some(Self { nots: FxHashMap::default(), num_block_markers: 0, branch_spans: vec![] })
+            Some(Self {
+                nots: FxHashMap::default(),
+                num_block_markers: 0,
+                branch_spans: vec![],
+                mcdc_state: MCDCState::new_if_enabled(tcx),
+            })
         } else {
             None
         }
@@ -79,6 +89,10 @@ impl BranchInfoBuilder {
         }
     }
 
+    fn get_mcdc_state_mut(&mut self) -> Option<&mut MCDCState> {
+        self.mcdc_state.as_mut()
+    }
+
     fn next_block_marker_id(&mut self) -> BlockMarkerId {
         let id = BlockMarkerId::from_usize(self.num_block_markers);
         self.num_block_markers += 1;
@@ -86,14 +100,96 @@ impl BranchInfoBuilder {
     }
 
     pub(crate) fn into_done(self) -> Option<Box<mir::coverage::BranchInfo>> {
-        let Self { nots: _, num_block_markers, branch_spans } = self;
+        let Self { nots: _, num_block_markers, branch_spans, mcdc_state } = self;
 
         if num_block_markers == 0 {
             assert!(branch_spans.is_empty());
             return None;
         }
 
-        Some(Box::new(mir::coverage::BranchInfo { num_block_markers, branch_spans }))
+        Some(Box::new(mir::coverage::BranchInfo {
+            num_block_markers,
+            branch_spans,
+            decision_spans: mcdc_state.map(|state| state.decisions).unwrap_or_default(),
+        }))
+    }
+}
+
+struct MCDCState {
+    /// To construct condition evaluation tree.
+    decision_stack: VecDeque<ConditionInfo>,
+    next_condition_id: usize,
+    decisions: Vec<DecisionSpan>,
+    conditions_counter: u16,
+}
+
+impl MCDCState {
+    fn new_if_enabled(tcx: TyCtxt<'_>) -> Option<Self> {
+        tcx.sess.instrument_coverage_mcdc().then(|| Self {
+            decision_stack: VecDeque::new(),
+            next_condition_id: 0,
+            decisions: vec![],
+            conditions_counter: 0,
+        })
+    }
+
+    fn record_conditions(&mut self, op: LogicalOp) {
+        let parent_condition = self.decision_stack.pop_back().unwrap_or_default();
+        let lhs_id = if parent_condition.condition_id == ConditionId::NONE {
+            self.next_condition_id += 1;
+            ConditionId::from(self.next_condition_id)
+        } else {
+            parent_condition.condition_id
+        };
+
+        self.next_condition_id += 1;
+        let rhs_condition_id = ConditionId::from(self.next_condition_id);
+
+        let (lhs, rhs) = match op {
+            LogicalOp::And => {
+                let lhs = ConditionInfo {
+                    condition_id: lhs_id,
+                    true_next_id: rhs_condition_id,
+                    false_next_id: parent_condition.false_next_id,
+                };
+                let rhs = ConditionInfo {
+                    condition_id: rhs_condition_id,
+                    true_next_id: parent_condition.true_next_id,
+                    false_next_id: parent_condition.false_next_id,
+                };
+                (lhs, rhs)
+            }
+            LogicalOp::Or => {
+                let lhs = ConditionInfo {
+                    condition_id: lhs_id,
+                    true_next_id: parent_condition.true_next_id,
+                    false_next_id: rhs_condition_id,
+                };
+                let rhs = ConditionInfo {
+                    condition_id: rhs_condition_id,
+                    true_next_id: parent_condition.true_next_id,
+                    false_next_id: parent_condition.false_next_id,
+                };
+                (lhs, rhs)
+            }
+        };
+        // We visit expressions tree in pre-order, so place the left-hand side on the top.
+        self.decision_stack.push_back(rhs);
+        self.decision_stack.push_back(lhs);
+    }
+
+    fn pop_condition_info(&mut self) -> Option<ConditionInfo> {
+        let condition = self.decision_stack.pop_back();
+        if condition.is_some() {
+            self.conditions_counter += 1;
+            if self.decision_stack.is_empty()
+                && let Some(decision) = self.decisions.last_mut()
+            {
+                decision.conditions_num = self.conditions_counter;
+                self.conditions_counter = 0;
+            }
+        }
+        condition
     }
 }
 
@@ -122,6 +218,12 @@ impl Builder<'_, '_> {
         // Now that we have `source_info`, we can upgrade to a &mut reference.
         let branch_info = self.coverage_branch_info.as_mut().expect("upgrading & to &mut");
 
+        let condition_info = branch_info
+            .mcdc_state
+            .as_mut()
+            .and_then(MCDCState::pop_condition_info)
+            .unwrap_or_default();
+
         let mut inject_branch_marker = |block: BasicBlock| {
             let id = branch_info.next_block_marker_id();
 
@@ -139,8 +241,26 @@ impl Builder<'_, '_> {
 
         branch_info.branch_spans.push(BranchSpan {
             span: source_info.span,
+            condition_info,
             true_marker,
             false_marker,
         });
+    }
+
+    pub(crate) fn visit_coverage_decision(&mut self, expr_id: ExprId) {
+        if let Some(mcdc_state) =
+            self.coverage_branch_info.as_mut().and_then(BranchInfoBuilder::get_mcdc_state_mut)
+        {
+            mcdc_state
+                .decisions
+                .push(DecisionSpan { span: self.thir[expr_id].span, conditions_num: 0 });
+        }
+    }
+    pub(crate) fn visit_coverage_branch_operation(&mut self, logical_op: LogicalOp) {
+        if let Some(mcdc_state) =
+            self.coverage_branch_info.as_mut().and_then(BranchInfoBuilder::get_mcdc_state_mut)
+        {
+            mcdc_state.record_conditions(logical_op);
+        }
     }
 }
