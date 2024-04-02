@@ -20,7 +20,7 @@ pub(crate) struct BranchInfoBuilder {
 
     num_block_markers: usize,
     branch_spans: Vec<BranchSpan>,
-
+    decision_spans: Vec<DecisionSpan>,
     mcdc_state: Option<MCDCState>,
 }
 
@@ -43,6 +43,7 @@ impl BranchInfoBuilder {
                 nots: FxHashMap::default(),
                 num_block_markers: 0,
                 branch_spans: vec![],
+                decision_spans: vec![],
                 mcdc_state: MCDCState::new_if_enabled(tcx),
             })
         } else {
@@ -101,13 +102,12 @@ impl BranchInfoBuilder {
     }
 
     pub(crate) fn into_done(self) -> Option<Box<mir::coverage::BranchInfo>> {
-        let Self { nots: _, num_block_markers, branch_spans, mcdc_state } = self;
+        let Self { nots: _, num_block_markers, branch_spans, decision_spans, .. } = self;
 
         if num_block_markers == 0 {
             assert!(branch_spans.is_empty());
             return None;
         }
-        let decision_spans = mcdc_state.map(|state| state.decisions).unwrap_or_default();
 
         Some(Box::new(mir::coverage::BranchInfo {
             num_block_markers,
@@ -120,22 +120,19 @@ impl BranchInfoBuilder {
 /// The MCDC bitmap scales exponentially (2^n) based on the number of conditions seen,
 /// So llvm sets a maximum value prevents the bitmap footprint from growing too large without the user's knowledge.
 /// This limit may be relaxed if the [upstream change](https://github.com/llvm/llvm-project/pull/82448) is merged.
-const MAX_CONDITIONS_NUM_IN_DECISION: u16 = 6;
+const MAX_CONDITIONS_NUM_IN_DECISION: usize = 6;
 
 struct MCDCState {
     /// To construct condition evaluation tree.
     decision_stack: VecDeque<ConditionInfo>,
     next_condition_id: usize,
-    decisions: Vec<DecisionSpan>,
 }
 
 impl MCDCState {
     fn new_if_enabled(tcx: TyCtxt<'_>) -> Option<Self> {
-        tcx.sess.instrument_coverage_mcdc().then(|| Self {
-            decision_stack: VecDeque::new(),
-            next_condition_id: 0,
-            decisions: vec![],
-        })
+        tcx.sess
+            .instrument_coverage_mcdc()
+            .then(|| Self { decision_stack: VecDeque::new(), next_condition_id: 0 })
     }
 
     /// At first we assign ConditionIds for each sub expression.
@@ -278,24 +275,7 @@ impl Builder<'_, '_> {
         });
     }
 
-    pub(crate) fn visit_coverage_decision(&mut self, expr_id: ExprId) {
-        let Some(branch_info) = self.coverage_branch_info.as_mut() else { return };
-        if branch_info.mcdc_state.is_some() {
-            let join_marker = branch_info.next_block_marker_id();
-            let mcdc_state = branch_info.mcdc_state.as_mut().unwrap();
-            assert!(
-                mcdc_state.decision_stack.is_empty() && mcdc_state.next_condition_id == 0,
-                "There is a unfinished decision"
-            );
-            mcdc_state.decisions.push(DecisionSpan {
-                span: self.thir[expr_id].span,
-                conditions_num: 0,
-                join_marker,
-            });
-        }
-    }
-
-    pub(crate) fn visit_coverage_decision_end(&mut self, join_block: BasicBlock) {
+    pub(crate) fn visit_coverage_decision(&mut self, expr_id: ExprId, join_block: BasicBlock) {
         if let Some((mcdc_state, branches)) = self
             .coverage_branch_info
             .as_mut()
@@ -305,18 +285,26 @@ impl Builder<'_, '_> {
                 mcdc_state.decision_stack.is_empty(),
                 "All condition should have been checked before the decision ends"
             );
-            let Some(decision) = mcdc_state.decisions.last_mut() else { return };
 
-            decision.conditions_num = mcdc_state.next_condition_id as u16;
+            let conditions_num = mcdc_state.next_condition_id;
+
             mcdc_state.next_condition_id = 0;
 
-            match decision.conditions_num {
+            match conditions_num {
                 0 => {
                     unreachable!("Decision with no conditions is not allowed");
                 }
                 1..=MAX_CONDITIONS_NUM_IN_DECISION => {
-                    let span = decision.span;
-                    let id = decision.join_marker;
+                    let span = self.thir[expr_id].span;
+                    let branch_info =
+                        self.coverage_branch_info.as_mut().expect("updating to existed");
+                    let id = branch_info.next_block_marker_id();
+
+                    branch_info.decision_spans.push(DecisionSpan {
+                        span,
+                        conditions_num: conditions_num as u16,
+                        join_marker: id,
+                    });
 
                     let statement = mir::Statement {
                         source_info: self.source_info(span),
@@ -326,16 +314,15 @@ impl Builder<'_, '_> {
                 }
                 _ => {
                     // Do not generate mcdc mappings and statements for decisions with too many conditions.
-                    for branch in branches.iter_mut().rev().take(decision.conditions_num as usize) {
+                    for branch in branches.iter_mut().rev().take(conditions_num) {
                         branch.condition_info = Default::default();
                     }
 
                     self.tcx.dcx().emit_warn(MCDCExceedsConditionNumLimit {
-                        span: decision.span,
-                        conditions_num: decision.conditions_num,
+                        span: self.thir[expr_id].span,
+                        conditions_num,
                         max_conditions_num: MAX_CONDITIONS_NUM_IN_DECISION,
                     });
-                    mcdc_state.decisions.pop();
                 }
             }
         }
