@@ -194,7 +194,7 @@ impl MCDCState {
             if self.decision_stack.is_empty()
                 && let Some(decision) = self.decisions.last_mut()
             {
-                decision.mcdc_params.conditions_num = (self.next_condition_id - 1) as u16;
+                decision.mcdc_params.conditions_num = self.next_condition_id as u16;
                 self.next_condition_id = 0;
             }
         }
