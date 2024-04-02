@@ -830,8 +830,8 @@ pub struct NontrivialStructuralMatch<'tcx> {
 pub(crate) struct MCDCExceedsConditionNumLimit {
     #[primary_span]
     pub span: Span,
-    pub conditions_num: u16,
-    pub max_conditions_num: u16,
+    pub conditions_num: usize,
+    pub max_conditions_num: usize,
 }
 
 #[derive(Diagnostic)]

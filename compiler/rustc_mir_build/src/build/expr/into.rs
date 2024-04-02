@@ -61,7 +61,6 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 let then_span = this.thir[then].span;
                 let then_source_info = this.source_info(then_span);
                 let condition_scope = this.local_scope();
-                this.visit_coverage_decision(cond);
 
                 let then_and_else_blocks = this.in_scope(
                     (if_then_scope, then_source_info),
@@ -114,7 +113,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 // The `then` and `else` arms have been lowered into their respective
                 // blocks, so make both of them meet up in a new block.
                 let join_block = this.cfg.start_new_block();
-                this.visit_coverage_decision_end(join_block);
+                this.visit_coverage_decision(cond, join_block);
                 this.cfg.goto(then_blk, source_info, join_block);
                 this.cfg.goto(else_blk, source_info, join_block);
                 join_block.unit()
@@ -151,7 +150,6 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 let condition_scope = this.local_scope();
                 let source_info = this.source_info(expr.span);
 
-                this.visit_coverage_decision(expr_id);
                 // We first evaluate the left-hand side of the predicate ...
                 let (then_block, else_block) =
                     this.in_if_then_scope(condition_scope, expr.span, |this| {
@@ -187,7 +185,6 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 );
                 let rhs = unpack!(this.expr_into_dest(destination, continuation, rhs));
                 let target = this.cfg.start_new_block();
-                this.visit_coverage_decision_end(target);
                 this.cfg.goto(rhs, source_info, target);
                 this.cfg.goto(short_circuit, source_info, target);
                 target.unit()
