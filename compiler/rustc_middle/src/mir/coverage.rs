@@ -112,7 +112,9 @@ pub enum CoverageKind {
     ///
     /// If this statement does not survive MIR optimizations, any mappings that
     /// refer to this counter can have those references simplified to zero.
-    CounterIncrement { id: CounterId },
+    CounterIncrement {
+        id: CounterId,
+    },
 
     /// Marks the point in MIR control-flow represented by a coverage expression.
     ///
@@ -122,7 +124,18 @@ pub enum CoverageKind {
     /// (This is only inserted for expression IDs that are directly used by
     /// mappings. Intermediate expressions with no direct mappings are
     /// retained/zeroed based on whether they are transitively used.)
-    ExpressionUsed { id: ExpressionId },
+    ExpressionUsed {
+        id: ExpressionId,
+    },
+
+    UpdateCondBitmap {
+        id: ConditionId,
+        value: bool,
+    },
+
+    UpdateTestVector {
+        bitmap_idx: u32,
+    },
 }
 
 impl Debug for CoverageKind {
@@ -133,6 +146,10 @@ impl Debug for CoverageKind {
             BlockMarker { id } => write!(fmt, "BlockMarker({:?})", id.index()),
             CounterIncrement { id } => write!(fmt, "CounterIncrement({:?})", id.index()),
             ExpressionUsed { id } => write!(fmt, "ExpressionUsed({:?})", id.index()),
+            UpdateCondBitmap { id, value } => {
+                write!(fmt, "UpdateCondBitmap({:?}, {value})", id.index())
+            }
+            UpdateTestVector { bitmap_idx } => write!(fmt, "UpdateTestVector({:?})", bitmap_idx),
         }
     }
 }
@@ -236,7 +253,7 @@ pub struct Mapping {
 pub struct FunctionCoverageInfo {
     pub function_source_hash: u64,
     pub num_counters: usize,
-
+    pub mcdc_bitmap_bytes: u32,
     pub expressions: IndexVec<ExpressionId, Expression>,
     pub mappings: Vec<Mapping>,
 }
@@ -250,6 +267,7 @@ pub struct BranchInfo {
     /// data structures without having to scan the entire body first.
     pub num_block_markers: usize,
     pub branch_spans: Vec<BranchSpan>,
+    pub mcdc_bitmap_bytes_num: u32,
     pub decision_spans: Vec<DecisionSpan>,
 }
 
@@ -291,5 +309,5 @@ pub struct DecisionInfo {
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct DecisionSpan {
     pub span: Span,
-    pub conditions_num: u16,
+    pub mcdc_params: DecisionInfo,
 }

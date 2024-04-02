@@ -17,7 +17,7 @@ use rustc_data_structures::small_c_str::SmallCStr;
 use rustc_hir::def_id::DefId;
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrs;
 use rustc_middle::ty::layout::{
-    FnAbiError, FnAbiOfHelpers, FnAbiRequest, LayoutError, LayoutOfHelpers, TyAndLayout,
+    FnAbiError, FnAbiOfHelpers, FnAbiRequest, HasTyCtxt, LayoutError, LayoutOfHelpers, TyAndLayout,
 };
 use rustc_middle::ty::{self, Instance, Ty, TyCtxt};
 use rustc_session::config::OptLevel;
@@ -1243,7 +1243,7 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         fn_name: Self::Value,
         hash: Self::Value,
         bitmap_bytes: Self::Value,
-    ) {
+    ) -> &'ll Value {
         debug!("mcdc_parameters() with args ({:?}, {:?}, {:?})", fn_name, hash, bitmap_bytes);
 
         let llfn = unsafe { llvm::LLVMRustGetInstrProfMCDCParametersIntrinsic(self.cx().llmod) };
@@ -1264,6 +1264,17 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
                 [].as_ptr(),
                 0 as c_uint,
             );
+            // Create condition bitmap named `mcdc.addr`.
+            let mut bx = Builder::with_cx(self.cx);
+            bx.position_at_start(llvm::LLVMGetFirstBasicBlock(self.llfn()));
+            let cond_bitmap = {
+                let alloca =
+                    llvm::LLVMBuildAlloca(bx.llbuilder, bx.cx.type_i32(), c"mcdc.addr".as_ptr());
+                llvm::LLVMSetAlignment(alloca, 4);
+                alloca
+            };
+            bx.store(self.const_i32(0), cond_bitmap, self.tcx().data_layout.i32_align.abi);
+            cond_bitmap
         }
     }
 
@@ -1322,12 +1333,12 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
                 self.cx.type_i64(),
                 self.cx.type_i32(),
                 self.cx.type_ptr(),
-                self.cx.type_bool(),
+                self.cx.type_i1(),
             ],
             self.cx.type_void(),
         );
         let args = &[fn_name, hash, cond_loc, mcdc_temp, bool_value];
-        let args = self.check_call("call", llty, llfn, args);
+        self.check_call("call", llty, llfn, args);
         unsafe {
             let _ = llvm::LLVMRustBuildCall(
                 self.llbuilder,
