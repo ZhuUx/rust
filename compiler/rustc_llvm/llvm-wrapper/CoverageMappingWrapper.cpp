@@ -4,8 +4,6 @@
 #include "llvm/ProfileData/Coverage/CoverageMappingWriter.h"
 #include "llvm/ProfileData/InstrProf.h"
 
-#include <iostream>
-
 using namespace llvm;
 
 // FFI equivalent of enum `llvm::coverage::Counter::CounterKind`
@@ -43,6 +41,8 @@ enum class LLVMRustCounterMappingRegionKind {
   SkippedRegion = 2,
   GapRegion = 3,
   BranchRegion = 4,
+  MCDCDecisionRegion = 5,
+  MCDCBranchRegion = 6
 };
 
 static coverage::CounterMappingRegion::RegionKind
@@ -58,8 +58,61 @@ fromRust(LLVMRustCounterMappingRegionKind Kind) {
     return coverage::CounterMappingRegion::GapRegion;
   case LLVMRustCounterMappingRegionKind::BranchRegion:
     return coverage::CounterMappingRegion::BranchRegion;
+  case LLVMRustCounterMappingRegionKind::MCDCDecisionRegion:
+    return coverage::CounterMappingRegion::MCDCDecisionRegion;
+  case LLVMRustCounterMappingRegionKind::MCDCBranchRegion:
+    return coverage::CounterMappingRegion::MCDCBranchRegion;
   }
   report_fatal_error("Bad LLVMRustCounterMappingRegionKind!");
+}
+
+enum class LLVMRustMCDCParametersTag : uint8_t {
+  None = 0,
+  Decision = 1,
+  Branch = 2,
+};
+
+struct LLVMRustMCDCDecisionParameters {
+  uint32_t BitmapIdx;
+  uint16_t NumConditions;
+};
+
+struct LLVMRustMCDCBranchParameters {
+  int16_t ConditionID;
+  int16_t ConditionIDs[2];
+};
+
+union LLVMRustMCDCParametersPayload {
+  LLVMRustMCDCDecisionParameters DecisionParameters;
+  LLVMRustMCDCBranchParameters BranchParameters;
+};
+
+struct LLVMRustMCDCParameters {
+  LLVMRustMCDCParametersTag Tag;
+  LLVMRustMCDCParametersPayload Payload;
+};
+
+static coverage::CounterMappingRegion::MCDCParameters
+fromRust(LLVMRustMCDCParameters Params) {
+  switch (Params.Tag) {
+  case LLVMRustMCDCParametersTag::None:
+    return coverage::CounterMappingRegion::MCDCParameters{};
+  case LLVMRustMCDCParametersTag::Decision:
+    return coverage::CounterMappingRegion::MCDCParameters{
+        .BitmapIdx =
+            static_cast<unsigned>(Params.Payload.DecisionParameters.BitmapIdx),
+        .NumConditions = static_cast<unsigned>(
+            Params.Payload.DecisionParameters.NumConditions)};
+  case LLVMRustMCDCParametersTag::Branch:
+    return coverage::CounterMappingRegion::MCDCParameters{
+        .ID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+            Params.Payload.BranchParameters.ConditionID),
+        .FalseID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+            Params.Payload.BranchParameters.ConditionIDs[0]),
+        .TrueID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+            Params.Payload.BranchParameters.ConditionIDs[1])};
+  }
+  report_fatal_error("Bad LLVMRustMCDCParametersTag!");
 }
 
 // FFI equivalent of struct `llvm::coverage::CounterMappingRegion`
@@ -67,6 +120,7 @@ fromRust(LLVMRustCounterMappingRegionKind Kind) {
 struct LLVMRustCounterMappingRegion {
   LLVMRustCounter Count;
   LLVMRustCounter FalseCount;
+  LLVMRustMCDCParameters MCDCParameters;
   uint32_t FileID;
   uint32_t ExpandedFileID;
   uint32_t LineStart;
@@ -135,7 +189,7 @@ extern "C" void LLVMRustCoverageWriteMappingToBuffer(
     MappingRegions.emplace_back(
         fromRust(Region.Count), fromRust(Region.FalseCount),
 #if LLVM_VERSION_GE(18, 0) && LLVM_VERSION_LT(19, 0)
-        coverage::CounterMappingRegion::MCDCParameters{},
+        fromRust(Region.MCDCParameters),
 #endif
         Region.FileID, Region.ExpandedFileID, // File IDs, then region info.
         Region.LineStart, Region.ColumnStart, Region.LineEnd, Region.ColumnEnd,

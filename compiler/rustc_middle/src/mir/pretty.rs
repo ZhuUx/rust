@@ -477,11 +477,19 @@ fn write_coverage_branch_info(
 ) -> io::Result<()> {
     let coverage::BranchInfo { branch_spans, .. } = branch_info;
 
-    for coverage::BranchSpan { span, true_marker, false_marker } in branch_spans {
-        writeln!(
-            w,
-            "{INDENT}coverage branch {{ true: {true_marker:?}, false: {false_marker:?} }} => {span:?}",
-        )?;
+    for coverage::BranchSpan { span, true_marker, false_marker, condition_info } in branch_spans {
+        if condition_info.condition_id == coverage::ConditionId::NONE {
+            writeln!(
+                w,
+                "{INDENT}coverage branch {{ true: {true_marker:?}, false: {false_marker:?} }} => {span:?}",
+            )?;
+        } else {
+            let id = condition_info.condition_id;
+            writeln!(
+                w,
+                "{INDENT}coverage branch {{ condition_id: {id:?}, true: {true_marker:?}, false: {false_marker:?} }} => {span:?}",
+            )?;
+        }
     }
     if !branch_spans.is_empty() {
         writeln!(w)?;

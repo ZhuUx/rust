@@ -1,6 +1,7 @@
 use rustc_data_structures::graph::WithNumNodes;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::mir;
+use rustc_middle::mir::coverage::{ConditionInfo, DecisionSpan};
 use rustc_span::{BytePos, Span};
 
 use crate::coverage::graph::{BasicCoverageBlock, CoverageGraph, START_BCB};
@@ -14,7 +15,11 @@ pub(super) enum BcbMappingKind {
     /// Associates an ordinary executable code span with its corresponding BCB.
     Code(BasicCoverageBlock),
     /// Associates a branch span with BCBs for its true and false arms.
-    Branch { true_bcb: BasicCoverageBlock, false_bcb: BasicCoverageBlock },
+    Branch {
+        true_bcb: BasicCoverageBlock,
+        false_bcb: BasicCoverageBlock,
+        mcdc_params: ConditionInfo,
+    },
 }
 
 #[derive(Debug)]
@@ -26,6 +31,7 @@ pub(super) struct BcbMapping {
 pub(super) struct CoverageSpans {
     bcb_has_mappings: BitSet<BasicCoverageBlock>,
     mappings: Vec<BcbMapping>,
+    decisions: Vec<DecisionSpan>,
 }
 
 impl CoverageSpans {
@@ -35,6 +41,10 @@ impl CoverageSpans {
 
     pub(super) fn all_bcb_mappings(&self) -> impl Iterator<Item = &BcbMapping> {
         self.mappings.iter()
+    }
+
+    pub(super) fn decisions(&self) -> impl Iterator<Item = &DecisionSpan> {
+        self.decisions.iter()
     }
 }
 
@@ -88,14 +98,18 @@ pub(super) fn generate_coverage_spans(
     for &BcbMapping { kind, span: _ } in &mappings {
         match kind {
             BcbMappingKind::Code(bcb) => insert(bcb),
-            BcbMappingKind::Branch { true_bcb, false_bcb } => {
+            BcbMappingKind::Branch { true_bcb, false_bcb, .. } => {
                 insert(true_bcb);
                 insert(false_bcb);
             }
         }
     }
 
-    Some(CoverageSpans { bcb_has_mappings, mappings })
+    Some(CoverageSpans {
+        bcb_has_mappings,
+        mappings,
+        decisions: from_mir::extract_decision_spans(mir_body).unwrap_or_default(),
+    })
 }
 
 #[derive(Debug)]

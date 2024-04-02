@@ -61,6 +61,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 let then_span = this.thir[then].span;
                 let then_source_info = this.source_info(then_span);
                 let condition_scope = this.local_scope();
+                this.visit_coverage_decision(cond);
 
                 let then_and_else_blocks = this.in_scope(
                     (if_then_scope, then_source_info),
@@ -148,6 +149,8 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             ExprKind::LogicalOp { op, lhs, rhs } => {
                 let condition_scope = this.local_scope();
                 let source_info = this.source_info(expr.span);
+
+                this.visit_coverage_decision(expr_id);
                 // We first evaluate the left-hand side of the predicate ...
                 let (then_block, else_block) =
                     this.in_if_then_scope(condition_scope, expr.span, |this| {
