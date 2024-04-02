@@ -222,6 +222,8 @@ fn inject_coverage_statements<'tcx>(
     }
 }
 
+/// For each conditions inject statements to update condition bitmap after it has been evaluated.
+/// For each decision inject statements to update test vector bitmap after it has been evaluated.
 fn inject_mcdc_statements<'tcx>(
     mir_body: &mut mir::Body<'tcx>,
     basic_coverage_blocks: &CoverageGraph,
