@@ -406,3 +406,5 @@ mir_build_unused_unsafe_enclosing_block_label = because it's nested under this `
 mir_build_variant_defined_here = not covered
 
 mir_build_wrap_suggestion = consider wrapping the function body in an unsafe block
+
+mir_build_exceeds_mcdc_condition_num_limit =  Conditions number of the decision ({$conditions_num}) exceeds limit ({$max_conditions_num}). MCDC analysis will not count this expression.
