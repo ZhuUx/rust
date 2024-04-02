@@ -120,9 +120,7 @@ pub enum CoverageKind {
     ///
     /// If this statement does not survive MIR optimizations, any mappings that
     /// refer to this counter can have those references simplified to zero.
-    CounterIncrement {
-        id: CounterId,
-    },
+    CounterIncrement { id: CounterId },
 
     /// Marks the point in MIR control-flow represented by a coverage expression.
     ///
@@ -132,18 +130,23 @@ pub enum CoverageKind {
     /// (This is only inserted for expression IDs that are directly used by
     /// mappings. Intermediate expressions with no direct mappings are
     /// retained/zeroed based on whether they are transitively used.)
-    ExpressionUsed {
-        id: ExpressionId,
-    },
+    ExpressionUsed { id: ExpressionId },
 
-    UpdateCondBitmap {
-        id: ConditionId,
-        value: bool,
-    },
+    /// Marks the point in MIR control flow represented by a evaluated condition.
+    ///
+    /// This is eventually lowered to `llvm.instrprof.mcdc.condbitmap.update` in LLVM IR.
+    ///
+    /// If this statement does not survive MIR optimizations, the condition would never be
+    /// taken as evaluated.
+    CondBitmapUpdate { id: ConditionId, value: bool },
 
-    UpdateTestVector {
-        bitmap_idx: u32,
-    },
+    /// Marks the point in MIR control flow represented by a evaluated decision.
+    ///
+    /// This is eventually lowered to `llvm.instrprof.mcdc.tvbitmap.update` in LLVM IR.
+    ///
+    /// If this statement does not survive MIR optimizations, the decision would never be
+    /// taken as evaluated.
+    TestVectorBitmapUpdate { bitmap_idx: u32 },
 }
 
 impl Debug for CoverageKind {
@@ -154,10 +157,12 @@ impl Debug for CoverageKind {
             BlockMarker { id } => write!(fmt, "BlockMarker({:?})", id.index()),
             CounterIncrement { id } => write!(fmt, "CounterIncrement({:?})", id.index()),
             ExpressionUsed { id } => write!(fmt, "ExpressionUsed({:?})", id.index()),
-            UpdateCondBitmap { id, value } => {
-                write!(fmt, "UpdateCondBitmap({:?}, {value})", id.index())
+            CondBitmapUpdate { id, value } => {
+                write!(fmt, "CondBitmapUpdate({:?}, {:?})", id.index(), value)
             }
-            UpdateTestVector { bitmap_idx } => write!(fmt, "UpdateTestVector({:?})", bitmap_idx),
+            TestVectorBitmapUpdate { bitmap_idx } => {
+                write!(fmt, "TestVectorUpdate({:?})", bitmap_idx)
+            }
         }
     }
 }
@@ -213,9 +218,11 @@ pub enum MappingKind {
     /// Associates a normal region of code with a counter/expression/zero.
     Code(CovTerm),
     /// Associates a branch region with separate counters for true and false.
-    Branch { true_term: CovTerm, false_term: CovTerm, mcdc_params: ConditionInfo },
+    Branch { true_term: CovTerm, false_term: CovTerm },
+    /// Associates a branch region with separate counters for true and false.
+    MCDCBranch { true_term: CovTerm, false_term: CovTerm, mcdc_params: ConditionInfo },
     /// Associates a decision region with a bitmap and number of conditions.
-    Decision(DecisionInfo),
+    MCDCDecision(DecisionInfo),
 }
 
 impl MappingKind {
@@ -227,7 +234,8 @@ impl MappingKind {
         match *self {
             Self::Code(term) => one(term),
             Self::Branch { true_term, false_term, .. } => two(true_term, false_term),
-            Self::Decision(_) => zero(),
+            Self::MCDCBranch { true_term, false_term, .. } => two(true_term, false_term),
+            Self::MCDCDecision(_) => zero(),
         }
     }
 
@@ -236,12 +244,15 @@ impl MappingKind {
     pub fn map_terms(&self, map_fn: impl Fn(CovTerm) -> CovTerm) -> Self {
         match *self {
             Self::Code(term) => Self::Code(map_fn(term)),
-            Self::Branch { true_term, false_term, mcdc_params } => Self::Branch {
+            Self::Branch { true_term, false_term } => {
+                Self::Branch { true_term: map_fn(true_term), false_term: map_fn(false_term) }
+            }
+            Self::MCDCBranch { true_term, false_term, mcdc_params } => Self::MCDCBranch {
                 true_term: map_fn(true_term),
                 false_term: map_fn(false_term),
                 mcdc_params,
             },
-            Self::Decision(param) => Self::Decision(param),
+            Self::MCDCDecision(param) => Self::MCDCDecision(param),
         }
     }
 }
@@ -275,7 +286,6 @@ pub struct BranchInfo {
     /// data structures without having to scan the entire body first.
     pub num_block_markers: usize,
     pub branch_spans: Vec<BranchSpan>,
-    pub mcdc_bitmap_bytes_num: u32,
     pub decision_spans: Vec<DecisionSpan>,
 }
 
@@ -317,5 +327,6 @@ pub struct DecisionInfo {
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct DecisionSpan {
     pub span: Span,
-    pub mcdc_params: DecisionInfo,
+    pub conditions_num: u16,
+    pub join_marker: BlockMarkerId,
 }

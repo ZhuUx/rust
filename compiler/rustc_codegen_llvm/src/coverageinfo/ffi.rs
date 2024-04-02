@@ -224,19 +224,27 @@ impl CounterMappingRegion {
                 end_line,
                 end_col,
             ),
-            MappingKind::Branch { true_term, false_term, mcdc_params: condition_info } => {
-                Self::branch_region(
-                    Counter::from_term(true_term),
-                    Counter::from_term(false_term),
-                    condition_info,
-                    local_file_id,
-                    start_line,
-                    start_col,
-                    end_line,
-                    end_col,
-                )
-            }
-            MappingKind::Decision(decision_info) => Self::decision_region(
+            MappingKind::Branch { true_term, false_term } => Self::branch_region(
+                Counter::from_term(true_term),
+                Counter::from_term(false_term),
+                None,
+                local_file_id,
+                start_line,
+                start_col,
+                end_line,
+                end_col,
+            ),
+            MappingKind::MCDCBranch { true_term, false_term, mcdc_params } => Self::branch_region(
+                Counter::from_term(true_term),
+                Counter::from_term(false_term),
+                Some(mcdc_params),
+                local_file_id,
+                start_line,
+                start_col,
+                end_line,
+                end_col,
+            ),
+            MappingKind::MCDCDecision(decision_info) => Self::decision_region(
                 decision_info,
                 local_file_id,
                 start_line,
@@ -272,14 +280,17 @@ impl CounterMappingRegion {
     pub(crate) fn branch_region(
         counter: Counter,
         false_counter: Counter,
-        condition_info: ConditionInfo,
+        condition_info: Option<ConditionInfo>,
         file_id: u32,
         start_line: u32,
         start_col: u32,
         end_line: u32,
         end_col: u32,
     ) -> Self {
-        let mcdc_params = mcdc::Parameters::Branch(condition_info.into());
+        let mcdc_params = condition_info
+            .map(mcdc::BranchParameters::from)
+            .map(mcdc::Parameters::Branch)
+            .unwrap_or(mcdc::Parameters::None);
         let kind = match mcdc_params {
             mcdc::Parameters::None => RegionKind::BranchRegion,
             mcdc::Parameters::Branch(_) => RegionKind::MCDCBranchRegion,
@@ -307,10 +318,12 @@ impl CounterMappingRegion {
         end_line: u32,
         end_col: u32,
     ) -> Self {
+        let mcdc_params = mcdc::Parameters::Decision(decision_info.into());
+
         Self {
             counter: Counter::ZERO,
             false_counter: Counter::ZERO,
-            mcdc_params: mcdc::Parameters::Decision(decision_info.into()),
+            mcdc_params,
             file_id,
             expanded_file_id: 0,
             start_line,

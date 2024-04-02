@@ -77,16 +77,6 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
         return;
     };
 
-    let mcdc_bitmap_bytes = coverage_spans
-        .decisions()
-        .last()
-        .map(|decision| {
-            (decision.mcdc_params.bitmap_idx + (1 << decision.mcdc_params.conditions_num).max(8))
-                / 8
-        })
-        .unwrap_or_default();
-
-    ////////////////////////////////////////////////////
     // Create an optimized mix of `Counter`s and `Expression`s for the `CoverageGraph`. Ensure
     // every coverage span has a `Counter` or `Expression` assigned to its `BasicCoverageBlock`
     // and all `Expression` dependencies (operands) are also generated, for any other
@@ -109,10 +99,12 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
         &coverage_counters,
     );
 
+    inject_mcdc_statements(mir_body, &basic_coverage_blocks, &coverage_spans);
+
     mir_body.function_coverage_info = Some(Box::new(FunctionCoverageInfo {
         function_source_hash: hir_info.function_source_hash,
         num_counters: coverage_counters.num_counters(),
-        mcdc_bitmap_bytes,
+        mcdc_bitmap_bytes: coverage_spans.test_vector_bitmap_bytes(),
         expressions: coverage_counters.into_expressions(),
         mappings,
     }));
@@ -148,25 +140,26 @@ fn create_mappings<'tcx>(
 
     let mut mappings = Vec::new();
 
-    for decision in coverage_spans.decisions() {
-        let kind = MappingKind::Decision(decision.mcdc_params);
-
-        if let Some(code_region) = make_code_region(source_map, file_name, decision.span, body_span)
-        {
-            mappings.push(Mapping { kind, code_region });
-        }
-    }
-
     mappings.extend(coverage_spans.all_bcb_mappings().filter_map(
         |&BcbMapping { kind: bcb_mapping_kind, span }| {
             let kind = match bcb_mapping_kind {
                 BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(bcb)),
                 BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params } => {
-                    MappingKind::Branch {
-                        true_term: term_for_bcb(true_bcb),
-                        false_term: term_for_bcb(false_bcb),
-                        mcdc_params,
+                    if mcdc_params.condition_id == ConditionId::NONE {
+                        MappingKind::Branch {
+                            true_term: term_for_bcb(true_bcb),
+                            false_term: term_for_bcb(false_bcb),
+                        }
+                    } else {
+                        MappingKind::MCDCBranch {
+                            true_term: term_for_bcb(true_bcb),
+                            false_term: term_for_bcb(false_bcb),
+                            mcdc_params,
+                        }
                     }
+                }
+                BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
+                    MappingKind::MCDCDecision(DecisionInfo { bitmap_idx, conditions_num })
                 }
             };
             let code_region = make_code_region(source_map, file_name, span, body_span)?;
@@ -226,6 +219,46 @@ fn inject_coverage_statements<'tcx>(
             CoverageKind::ExpressionUsed { id: expression_id },
             basic_coverage_blocks[bcb].leader_bb(),
         );
+    }
+}
+
+fn inject_mcdc_statements<'tcx>(
+    mir_body: &mut mir::Body<'tcx>,
+    basic_coverage_blocks: &CoverageGraph,
+    coverage_spans: &CoverageSpans,
+) {
+    if coverage_spans.test_vector_bitmap_bytes() == 0 {
+        return;
+    }
+    for mapping in coverage_spans.all_bcb_mappings() {
+        match mapping.kind {
+            BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params } => {
+                if mcdc_params.condition_id == ConditionId::NONE {
+                    continue;
+                }
+                let true_bb = basic_coverage_blocks[true_bcb].leader_bb();
+                inject_statement(
+                    mir_body,
+                    CoverageKind::CondBitmapUpdate { id: mcdc_params.condition_id, value: true },
+                    true_bb,
+                );
+                let false_bb = basic_coverage_blocks[false_bcb].leader_bb();
+                inject_statement(
+                    mir_body,
+                    CoverageKind::CondBitmapUpdate { id: mcdc_params.condition_id, value: false },
+                    false_bb,
+                );
+            }
+            BcbMappingKind::Decision { join_bcb, bitmap_idx, .. } => {
+                let join_bb = basic_coverage_blocks[join_bcb].leader_bb();
+                inject_statement(
+                    mir_body,
+                    CoverageKind::TestVectorBitmapUpdate { bitmap_idx: bitmap_idx },
+                    join_bb,
+                );
+            }
+            _ => {}
+        }
     }
 }
 
