@@ -1238,6 +1238,114 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         }
     }
 
+    fn mcdc_parameters(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        bitmap_bytes: Self::Value,
+    ) {
+        debug!("mcdc_parameters() with args ({:?}, {:?}, {:?})", fn_name, hash, bitmap_bytes);
+
+        let llfn = unsafe { llvm::LLVMRustGetInstrProfMCDCParametersIntrinsic(self.cx().llmod) };
+        let llty = self.cx.type_func(
+            &[self.cx.type_ptr(), self.cx.type_i64(), self.cx.type_i32()],
+            self.cx.type_void(),
+        );
+        let args = &[fn_name, hash, bitmap_bytes];
+        let args = self.check_call("call", llty, llfn, args);
+
+        unsafe {
+            let _ = llvm::LLVMRustBuildCall(
+                self.llbuilder,
+                llty,
+                llfn,
+                args.as_ptr() as *const &llvm::Value,
+                args.len() as c_uint,
+                [].as_ptr(),
+                0 as c_uint,
+            );
+        }
+    }
+
+    fn mcdc_tvbitmap_update(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        bitmap_bytes: Self::Value,
+        bitmap_index: Self::Value,
+        mcdc_temp: Self::Value,
+    ) {
+        debug!(
+            "mcdc_tvbitmap_update() with args ({:?}, {:?}, {:?}, {:?}, {:?})",
+            fn_name, hash, bitmap_bytes, bitmap_index, mcdc_temp
+        );
+
+        let llfn =
+            unsafe { llvm::LLVMRustGetInstrProfMCDCTVBitmapUpdateIntrinsic(self.cx().llmod) };
+        let llty = self.cx.type_func(
+            &[
+                self.cx.type_ptr(),
+                self.cx.type_i64(),
+                self.cx.type_i32(),
+                self.cx.type_i32(),
+                self.cx.type_ptr(),
+            ],
+            self.cx.type_void(),
+        );
+        let args = &[fn_name, hash, bitmap_bytes, bitmap_index, mcdc_temp];
+        let args = self.check_call("call", llty, llfn, args);
+        unsafe {
+            let _ = llvm::LLVMRustBuildCall(
+                self.llbuilder,
+                llty,
+                llfn,
+                args.as_ptr() as *const &llvm::Value,
+                args.len() as c_uint,
+                [].as_ptr(),
+                0 as c_uint,
+            );
+        }
+    }
+
+    fn mcdc_condbitmap_update(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        cond_loc: Self::Value,
+        mcdc_temp: Self::Value,
+        bool_value: Self::Value,
+    ) {
+        let llfn = unsafe { llvm::LLVMRustGetInstrProfMCDCCondBitmapIntrinsic(self.cx().llmod) };
+        let llty = self.cx.type_func(
+            &[
+                self.cx.type_ptr(),
+                self.cx.type_i64(),
+                self.cx.type_i32(),
+                self.cx.type_ptr(),
+                self.cx.type_bool(),
+            ],
+            self.cx.type_void(),
+        );
+        let args = &[fn_name, hash, cond_loc, mcdc_temp, bool_value];
+        let args = self.check_call("call", llty, llfn, args);
+        unsafe {
+            let _ = llvm::LLVMRustBuildCall(
+                self.llbuilder,
+                llty,
+                llfn,
+                args.as_ptr() as *const &llvm::Value,
+                args.len() as c_uint,
+                [].as_ptr(),
+                0 as c_uint,
+            );
+        }
+    }
+
+    fn mcdc_condbitmap_reset(&mut self, mcdc_temp: Self::Value) {
+        let i32_align = self.tcx().data_layout.i32_align.abi;
+        self.store(self.const_i32(0), mcdc_temp, i32_align);
+    }
+
     fn call(
         &mut self,
         llty: &'ll Type,
