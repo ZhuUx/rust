@@ -819,6 +819,15 @@ pub struct NontrivialStructuralMatch<'tcx> {
 }
 
 #[derive(Diagnostic)]
+#[diag(mir_build_exceeds_mcdc_condition_num_limit)]
+pub(crate) struct MCDCExceedsConditionNumLimit {
+    #[primary_span]
+    pub span: Span,
+    pub conditions_num: u16,
+    pub max_conditions_num: u16,
+}
+
+#[derive(Diagnostic)]
 #[diag(mir_build_pattern_not_covered, code = E0005)]
 pub(crate) struct PatternNotCovered<'s, 'tcx> {
     #[primary_span]
