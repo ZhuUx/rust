@@ -396,7 +396,7 @@ mod desc {
     pub const parse_optimization_fuel: &str = "crate=integer";
     pub const parse_dump_mono_stats: &str = "`markdown` (default) or `json`";
     pub const parse_instrument_coverage: &str = parse_bool;
-    pub const parse_coverage_options: &str = "`branch` or `no-branch`";
+    pub const parse_coverage_options: &str = "either  `no-branch`, `branch` or `mcdc`";
     pub const parse_instrument_xray: &str = "either a boolean (`yes`, `no`, `on`, `off`, etc), or a comma separated list of settings: `always` or `never` (mutually exclusive), `ignore-loops`, `instruction-threshold=N`, `skip-entry`, `skip-exit`";
     pub const parse_unpretty: &str = "`string` or `string=string`";
     pub const parse_treat_err_as_bug: &str = "either no value or a non-negative number";
@@ -943,16 +943,30 @@ mod parse {
     pub(crate) fn parse_coverage_options(slot: &mut CoverageOptions, v: Option<&str>) -> bool {
         let Some(v) = v else { return true };
 
-        for option in v.split(',') {
-            let (option, enabled) = match option.strip_prefix("no-") {
-                Some(without_no) => (without_no, false),
-                None => (option, true),
-            };
-            let slot = match option {
-                "branch" => &mut slot.branch,
+        let set_branch_option = |slot: &mut CoverageOptions, option: &str| {
+            match option {
+                "no-branch" => slot.branch = false,
+                "branch" => slot.branch = true,
+                "mcdc" => {
+                    slot.mcdc = true;
+                    slot.branch = true
+                }
                 _ => return false,
-            };
-            *slot = enabled;
+            }
+            true
+        };
+
+        // Once an option is parsed we removed it from the array so that conflicting options such as "branch,no-branch" could be detected.
+        let mut parsers_set: [Option<&dyn Fn(&mut CoverageOptions, &str) -> bool>; 1] =
+            [Some(&set_branch_option)];
+
+        for option in v.split(',') {
+            if !parsers_set
+                .iter_mut()
+                .any(|p| p.is_some_and(|parser| parser(slot, option)).then(|| p.take()).is_some())
+            {
+                return false;
+            }
         }
 
         true
