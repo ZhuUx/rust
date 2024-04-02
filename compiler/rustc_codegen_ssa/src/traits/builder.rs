@@ -382,6 +382,33 @@ pub trait BuilderMethods<'a, 'tcx>:
         index: Self::Value,
     );
 
+    fn mcdc_parameters(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        bitmap_bytes: Self::Value,
+    );
+
+    fn mcdc_condbitmap_update(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        cond_loc: Self::Value,
+        mcdc_temp: Self::Value,
+        bool_value: Self::Value,
+    );
+
+    fn mcdc_tvbitmap_update(
+        &mut self,
+        fn_name: Self::Value,
+        hash: Self::Value,
+        bitmap_bytes: Self::Value,
+        bitmap_index: Self::Value,
+        mcdc_temp: Self::Value,
+    );
+
+    fn mcdc_condbitmap_reset(&mut self, mcdc_temp: Self::Value);
+
     fn call(
         &mut self,
         llty: Self::Type,
