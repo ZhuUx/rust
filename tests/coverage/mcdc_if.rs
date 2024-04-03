@@ -55,6 +55,17 @@ fn mcdc_check_not_tree_decision(a: bool, b: bool, c: bool) {
     }
 }
 
+fn mcdc_nested_if(a: bool, b: bool, c: bool) {
+    if a || b {
+        say("a or b");
+        if b && c {
+            say("b and c");
+        }
+    } else {
+        say("neither a nor b");
+    }
+}
+
 #[coverage(off)]
 fn main() {
     mcdc_check_neither(false, false);
@@ -79,6 +90,10 @@ fn main() {
     mcdc_check_not_tree_decision(true, true, false);
     mcdc_check_not_tree_decision(true, false, false);
     mcdc_check_not_tree_decision(true, false, true);
+
+    mcdc_nested_if(true, false, true);
+    mcdc_nested_if(true, true, true);
+    mcdc_nested_if(true, true, false);
 }
 
 #[coverage(off)]
