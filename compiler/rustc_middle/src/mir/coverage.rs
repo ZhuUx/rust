@@ -319,6 +319,6 @@ pub struct DecisionInfo {
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct DecisionSpan {
     pub span: Span,
-    pub conditions_num: u16,
-    pub join_marker: BlockMarkerId,
+    pub conditions_num: usize,
+    pub end_marker: Vec<BlockMarkerId>,
 }

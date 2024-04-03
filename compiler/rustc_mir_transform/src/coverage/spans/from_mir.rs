@@ -387,6 +387,9 @@ pub(super) fn extract_branch_mappings(
         }
     }
 
+    let bcb_from_marker =
+        |marker: BlockMarkerId| basic_coverage_blocks.bcb_from_bb(block_markers[marker]?);
+
     let condition_filter_map =
         |&BranchSpan { span: raw_span, condition_info, true_marker, false_marker }| {
             // For now, ignore any branch span that was introduced by
@@ -396,29 +399,35 @@ pub(super) fn extract_branch_mappings(
             }
             let (span, _) = unexpand_into_body_span_with_visible_macro(raw_span, body_span)?;
 
-            let bcb_from_marker =
-                |marker: BlockMarkerId| basic_coverage_blocks.bcb_from_bb(block_markers[marker]?);
-
             let true_bcb = bcb_from_marker(true_marker)?;
             let false_bcb = bcb_from_marker(false_marker)?;
 
             Some(BcbMapping {
-                kind: BcbMappingKind::Branch { true_bcb, false_bcb, mcdc_params: condition_info },
+                kind: BcbMappingKind::Branch { true_bcb, false_bcb, condition_info },
                 span,
             })
         };
 
     let mut next_bitmap_idx = 0;
 
-    let decision_filter_map = |&DecisionSpan { span: raw_span, conditions_num, join_marker }| {
-        let (span, _) = unexpand_into_body_span_with_visible_macro(raw_span, body_span)?;
+    let decision_filter_map = |decision: &DecisionSpan| {
+        let (span, _) = unexpand_into_body_span_with_visible_macro(decision.span, body_span)?;
 
-        let join_bcb = basic_coverage_blocks.bcb_from_bb(block_markers[join_marker]?)?;
+        let end_bcbs = decision
+            .end_marker
+            .iter()
+            .map(|&marker| bcb_from_marker(marker))
+            .collect::<Option<_>>()?;
+
         let bitmap_idx = next_bitmap_idx;
-        next_bitmap_idx += (1_u32 << conditions_num).div_ceil(8);
+        next_bitmap_idx += (1_u32 << decision.conditions_num).div_ceil(8);
 
         Some(BcbMapping {
-            kind: BcbMappingKind::Decision { join_bcb, bitmap_idx, conditions_num },
+            kind: BcbMappingKind::Decision {
+                end_bcbs,
+                bitmap_idx,
+                conditions_num: decision.conditions_num as u16,
+            },
             span,
         })
     };

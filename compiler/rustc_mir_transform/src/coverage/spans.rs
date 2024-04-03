@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use rustc_data_structures::graph::WithNumNodes;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::mir;
@@ -10,7 +12,7 @@ use crate::coverage::ExtractedHirInfo;
 
 mod from_mir;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) enum BcbMappingKind {
     /// Associates an ordinary executable code span with its corresponding BCB.
     Code(BasicCoverageBlock),
@@ -18,10 +20,10 @@ pub(super) enum BcbMappingKind {
     Branch {
         true_bcb: BasicCoverageBlock,
         false_bcb: BasicCoverageBlock,
-        mcdc_params: ConditionInfo,
+        condition_info: ConditionInfo,
     },
     /// Associates a decision with its join BCB.
-    Decision { join_bcb: BasicCoverageBlock, bitmap_idx: u32, conditions_num: u16 },
+    Decision { end_bcbs: BTreeSet<BasicCoverageBlock>, bitmap_idx: u32, conditions_num: u16 },
 }
 
 #[derive(Debug)]
@@ -98,19 +100,19 @@ pub(super) fn generate_coverage_spans(
         bcb_has_mappings.insert(bcb);
     };
     let mut test_vector_bitmap_bytes = 0;
-    for &BcbMapping { kind, span: _ } in &mappings {
+    for BcbMapping { kind, span: _ } in &mappings {
         match kind {
-            BcbMappingKind::Code(bcb) => insert(bcb),
+            BcbMappingKind::Code(bcb) => insert(*bcb),
             BcbMappingKind::Branch { true_bcb, false_bcb, .. } => {
-                insert(true_bcb);
-                insert(false_bcb);
+                insert(*true_bcb);
+                insert(*false_bcb);
             }
             BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
                 // `bcb_has_mappings` is used for inject coverage counters
                 // but they are not needed for decision BCBs.
                 // While the length of test vector bitmap should be calculated here.
                 test_vector_bitmap_bytes = test_vector_bitmap_bytes
-                    .max(bitmap_idx + (1_u32 << conditions_num as u32).div_ceil(8));
+                    .max(bitmap_idx + (1_u32 << *conditions_num as u32).div_ceil(8));
             }
         }
     }
