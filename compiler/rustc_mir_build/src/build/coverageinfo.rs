@@ -178,7 +178,7 @@ impl MCDCState {
     fn record_conditions(&mut self, op: LogicalOp) {
         let parent_condition = self.decision_stack.pop_back().unwrap_or_default();
         let lhs_id = if parent_condition.condition_id == ConditionId::NONE {
-            self.next_condition_id += 1;
+            self.next_condition_id = 1;
             ConditionId::from(self.next_condition_id)
         } else {
             parent_condition.condition_id
@@ -249,7 +249,12 @@ impl Builder<'_, '_> {
         let condition_info = branch_info
             .mcdc_state
             .as_mut()
-            .and_then(|state| state.decision_stack.pop_back())
+            .and_then(|state| {
+                // If mcdc is enabled but no condition recorded in the stack, the branch must be standalone.
+                // In this case mc/dc is equivalent to branch coverage. Because each checked decision takes at least 1 byte
+                // in global bitmap of the function, we'd better not to generate too many mc/dc statements if could.
+                state.decision_stack.pop_back()
+            })
             .unwrap_or_default();
 
         let mut inject_branch_marker = |block: BasicBlock| {
@@ -283,7 +288,7 @@ impl Builder<'_, '_> {
         {
             assert!(
                 mcdc_state.decision_stack.is_empty(),
-                "All condition should have been checked before the decision ends"
+                "All conditions should have been checked before the decision ends"
             );
 
             let conditions_num = mcdc_state.next_condition_id;
@@ -292,7 +297,9 @@ impl Builder<'_, '_> {
 
             match conditions_num {
                 0 => {
-                    unreachable!("Decision with no conditions is not allowed");
+                    // By here means the decision has only one condition, mc/dc analysis could ignore it.
+                    // since mc/dc is equivalent to branch coverage in this case.
+                    return;
                 }
                 1..=MAX_CONDITIONS_NUM_IN_DECISION => {
                     let span = self.thir[expr_id].span;
