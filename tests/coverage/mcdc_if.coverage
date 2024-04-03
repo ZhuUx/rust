@@ -1,0 +1,208 @@
+   LL|       |#![feature(coverage_attribute)]
+   LL|       |//@ edition: 2021
+   LL|       |//@ compile-flags: -Zcoverage-options=mcdc
+   LL|       |//@ llvm-cov-flags: --show-mcdc
+   LL|       |
+   LL|      2|fn mcdc_check_neither(a: bool, b: bool) {
+   LL|      2|    if a && b {
+                          ^0
+  ------------------
+  |---> MC/DC Decision Region (7:8) to (7:14)
+  |
+  |  Number of Conditions: 2
+  |     Condition C1 --> (7:8)
+  |     Condition C2 --> (7:13)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2    Result
+  |  1 { F,  -  = F      }
+  |
+  |  C1-Pair: not covered
+  |  C2-Pair: not covered
+  |  MC/DC Coverage for Decision: 0.00%
+  |
+  ------------------
+   LL|      0|        say("a and b");
+   LL|      2|    } else {
+   LL|      2|        say("not both");
+   LL|      2|    }
+   LL|      2|}
+   LL|       |
+   LL|      2|fn mcdc_check_a(a: bool, b: bool) {
+   LL|      2|    if a && b {
+                          ^1
+  ------------------
+  |---> MC/DC Decision Region (15:8) to (15:14)
+  |
+  |  Number of Conditions: 2
+  |     Condition C1 --> (15:8)
+  |     Condition C2 --> (15:13)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2    Result
+  |  1 { F,  -  = F      }
+  |  2 { T,  T  = T      }
+  |
+  |  C1-Pair: covered: (1,2)
+  |  C2-Pair: not covered
+  |  MC/DC Coverage for Decision: 50.00%
+  |
+  ------------------
+   LL|      1|        say("a and b");
+   LL|      1|    } else {
+   LL|      1|        say("not both");
+   LL|      1|    }
+   LL|      2|}
+   LL|       |
+   LL|      2|fn mcdc_check_b(a: bool, b: bool) {
+   LL|      2|    if a && b {
+  ------------------
+  |---> MC/DC Decision Region (23:8) to (23:14)
+  |
+  |  Number of Conditions: 2
+  |     Condition C1 --> (23:8)
+  |     Condition C2 --> (23:13)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2    Result
+  |  1 { T,  F  = F      }
+  |  2 { T,  T  = T      }
+  |
+  |  C1-Pair: not covered
+  |  C2-Pair: covered: (1,2)
+  |  MC/DC Coverage for Decision: 50.00%
+  |
+  ------------------
+   LL|      1|        say("a and b");
+   LL|      1|    } else {
+   LL|      1|        say("not both");
+   LL|      1|    }
+   LL|      2|}
+   LL|       |
+   LL|      3|fn mcdc_check_both(a: bool, b: bool) {
+   LL|      3|    if a && b {
+                          ^2
+  ------------------
+  |---> MC/DC Decision Region (31:8) to (31:14)
+  |
+  |  Number of Conditions: 2
+  |     Condition C1 --> (31:8)
+  |     Condition C2 --> (31:13)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2    Result
+  |  1 { F,  -  = F      }
+  |  2 { T,  F  = F      }
+  |  3 { T,  T  = T      }
+  |
+  |  C1-Pair: covered: (1,3)
+  |  C2-Pair: covered: (2,3)
+  |  MC/DC Coverage for Decision: 100.00%
+  |
+  ------------------
+   LL|      1|        say("a and b");
+   LL|      2|    } else {
+   LL|      2|        say("not both");
+   LL|      2|    }
+   LL|      3|}
+   LL|       |
+   LL|      4|fn mcdc_check_tree_decision(a: bool, b: bool, c: bool) {
+   LL|      4|    // This expression is intentionally written in a way
+   LL|      4|    // where 100% branch coverage indicates 100% mcdc coverage.
+   LL|      4|    if a && (b || c) {
+                           ^3   ^2
+  ------------------
+  |---> MC/DC Decision Region (41:8) to (41:21)
+  |
+  |  Number of Conditions: 3
+  |     Condition C1 --> (41:8)
+  |     Condition C2 --> (41:14)
+  |     Condition C3 --> (41:19)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2, C3    Result
+  |  1 { F,  -,  -  = F      }
+  |  2 { T,  F,  F  = F      }
+  |  3 { T,  T,  -  = T      }
+  |  4 { T,  F,  T  = T      }
+  |
+  |  C1-Pair: covered: (1,3)
+  |  C2-Pair: covered: (2,3)
+  |  C3-Pair: covered: (2,4)
+  |  MC/DC Coverage for Decision: 100.00%
+  |
+  ------------------
+   LL|      2|        say("pass");
+   LL|      2|    } else {
+   LL|      2|        say("reject");
+   LL|      2|    }
+   LL|      4|}
+   LL|       |
+   LL|      4|fn mcdc_check_not_tree_decision(a: bool, b: bool, c: bool) {
+   LL|      4|    // Contradict to `mcdc_check_tree_decision`,
+   LL|      4|    // 100% branch coverage of this expression does not mean indicates 100% mcdc coverage.
+   LL|      4|    if (a || b) && c {
+                           ^1
+  ------------------
+  |---> MC/DC Decision Region (51:8) to (51:21)
+  |
+  |  Number of Conditions: 3
+  |     Condition C1 --> (51:9)
+  |     Condition C2 --> (51:14)
+  |     Condition C3 --> (51:20)
+  |
+  |  Executed MC/DC Test Vectors:
+  |
+  |     C1, C2, C3    Result
+  |  1 { T,  -,  F  = F      }
+  |  2 { T,  -,  T  = T      }
+  |  3 { F,  T,  T  = T      }
+  |
+  |  C1-Pair: not covered
+  |  C2-Pair: not covered
+  |  C3-Pair: covered: (1,2)
+  |  MC/DC Coverage for Decision: 33.33%
+  |
+  ------------------
+   LL|      2|        say("pass");
+   LL|      2|    } else {
+   LL|      2|        say("reject");
+   LL|      2|    }
+   LL|      4|}
+   LL|       |
+   LL|       |#[coverage(off)]
+   LL|       |fn main() {
+   LL|       |    mcdc_check_neither(false, false);
+   LL|       |    mcdc_check_neither(false, true);
+   LL|       |
+   LL|       |    mcdc_check_a(true, true);
+   LL|       |    mcdc_check_a(false, true);
+   LL|       |
+   LL|       |    mcdc_check_b(true, true);
+   LL|       |    mcdc_check_b(true, false);
+   LL|       |
+   LL|       |    mcdc_check_both(false, true);
+   LL|       |    mcdc_check_both(true, true);
+   LL|       |    mcdc_check_both(true, false);
+   LL|       |
+   LL|       |    mcdc_check_tree_decision(false, true, true);
+   LL|       |    mcdc_check_tree_decision(true, true, false);
+   LL|       |    mcdc_check_tree_decision(true, false, false);
+   LL|       |    mcdc_check_tree_decision(true, false, true);
+   LL|       |
+   LL|       |    mcdc_check_not_tree_decision(false, true, true);
+   LL|       |    mcdc_check_not_tree_decision(true, true, false);
+   LL|       |    mcdc_check_not_tree_decision(true, false, false);
+   LL|       |    mcdc_check_not_tree_decision(true, false, true);
+   LL|       |}
+   LL|       |
+   LL|       |#[coverage(off)]
+   LL|       |fn say(message: &str) {
+   LL|       |    core::hint::black_box(message);
+   LL|       |}
+
