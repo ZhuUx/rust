@@ -943,32 +943,21 @@ mod parse {
     pub(crate) fn parse_coverage_options(slot: &mut CoverageOptions, v: Option<&str>) -> bool {
         let Some(v) = v else { return true };
 
-        let set_branch_option = |slot: &mut CoverageOptions, option: &str| {
+        for option in v.split(',') {
             match option {
-                "no-branch" => slot.branch = false,
-                "branch" => slot.branch = true,
+                "no-branch" => {
+                    slot.branch = false;
+                }
+                "branch" => {
+                    slot.branch = true;
+                }
                 "mcdc" => {
-                    slot.mcdc = true;
-                    slot.branch = true
+                    slot.branch = true;
+                    slot.mcdc = true
                 }
                 _ => return false,
             }
-            true
-        };
-
-        // Once an option is parsed we removed it from the array so that conflicting options such as "branch,no-branch" could be detected.
-        let mut parsers_set: [Option<&dyn Fn(&mut CoverageOptions, &str) -> bool>; 1] =
-            [Some(&set_branch_option)];
-
-        for option in v.split(',') {
-            if !parsers_set
-                .iter_mut()
-                .any(|p| p.is_some_and(|parser| parser(slot, option)).then(|| p.take()).is_some())
-            {
-                return false;
-            }
         }
-
         true
     }
 
