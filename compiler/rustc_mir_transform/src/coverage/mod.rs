@@ -142,27 +142,24 @@ fn create_mappings<'tcx>(
 
     mappings.extend(coverage_spans.all_bcb_mappings().filter_map(
         |BcbMapping { kind: bcb_mapping_kind, span }| {
-            let kind = match bcb_mapping_kind {
-                BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(*bcb)),
+            let kind = match *bcb_mapping_kind {
+                BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(bcb)),
                 BcbMappingKind::Branch { true_bcb, false_bcb, condition_info } => {
                     if condition_info.condition_id == ConditionId::NONE {
                         MappingKind::Branch {
-                            true_term: term_for_bcb(*true_bcb),
-                            false_term: term_for_bcb(*false_bcb),
+                            true_term: term_for_bcb(true_bcb),
+                            false_term: term_for_bcb(false_bcb),
                         }
                     } else {
                         MappingKind::MCDCBranch {
-                            true_term: term_for_bcb(*true_bcb),
-                            false_term: term_for_bcb(*false_bcb),
-                            mcdc_params: *condition_info,
+                            true_term: term_for_bcb(true_bcb),
+                            false_term: term_for_bcb(false_bcb),
+                            mcdc_params: condition_info,
                         }
                     }
                 }
                 BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
-                    MappingKind::MCDCDecision(DecisionInfo {
-                        bitmap_idx: *bitmap_idx,
-                        conditions_num: *conditions_num,
-                    })
+                    MappingKind::MCDCDecision(DecisionInfo { bitmap_idx, conditions_num })
                 }
             };
             let code_region = make_code_region(source_map, file_name, *span, body_span)?;

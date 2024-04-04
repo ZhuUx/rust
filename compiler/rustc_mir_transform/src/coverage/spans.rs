@@ -101,18 +101,18 @@ pub(super) fn generate_coverage_spans(
     };
     let mut test_vector_bitmap_bytes = 0;
     for BcbMapping { kind, span: _ } in &mappings {
-        match kind {
-            BcbMappingKind::Code(bcb) => insert(*bcb),
+        match *kind {
+            BcbMappingKind::Code(bcb) => insert(bcb),
             BcbMappingKind::Branch { true_bcb, false_bcb, .. } => {
-                insert(*true_bcb);
-                insert(*false_bcb);
+                insert(true_bcb);
+                insert(false_bcb);
             }
             BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
                 // `bcb_has_mappings` is used for inject coverage counters
                 // but they are not needed for decision BCBs.
                 // While the length of test vector bitmap should be calculated here.
                 test_vector_bitmap_bytes = test_vector_bitmap_bytes
-                    .max(bitmap_idx + (1_u32 << *conditions_num as u32).div_ceil(8));
+                    .max(bitmap_idx + (1_u32 << conditions_num as u32).div_ceil(8));
             }
         }
     }
