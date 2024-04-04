@@ -7,7 +7,7 @@
    LL|      2|    if a && b {
                           ^0
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (7:14)
+  |---> MC/DC Decision Region (LL:8) to (LL:14)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:8)
@@ -33,7 +33,7 @@
    LL|      2|    if a && b {
                           ^1
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (15:14)
+  |---> MC/DC Decision Region (LL:8) to (LL:14)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:8)
@@ -59,7 +59,7 @@
    LL|      2|fn mcdc_check_b(a: bool, b: bool) {
    LL|      2|    if a && b {
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (23:14)
+  |---> MC/DC Decision Region (LL:8) to (LL:14)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:8)
@@ -86,7 +86,7 @@
    LL|      3|    if a && b {
                           ^2
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (31:14)
+  |---> MC/DC Decision Region (LL:8) to (LL:14)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:8)
@@ -116,7 +116,7 @@
    LL|      4|    if a && (b || c) {
                            ^3   ^2
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (41:21)
+  |---> MC/DC Decision Region (LL:8) to (LL:21)
   |
   |  Number of Conditions: 3
   |     Condition C1 --> (LL:8)
@@ -149,7 +149,7 @@
    LL|      4|    if (a || b) && c {
                            ^1
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (51:21)
+  |---> MC/DC Decision Region (LL:8) to (LL:21)
   |
   |  Number of Conditions: 3
   |     Condition C1 --> (LL:9)
@@ -179,7 +179,7 @@
    LL|      3|    if a || b {
                           ^0
   ------------------
-  |---> MC/DC Decision Region (LL:8) to (59:14)
+  |---> MC/DC Decision Region (LL:8) to (LL:14)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:8)
@@ -199,7 +199,7 @@
    LL|      3|        if b && c {
                               ^2
   ------------------
-  |---> MC/DC Decision Region (LL:12) to (61:18)
+  |---> MC/DC Decision Region (LL:12) to (LL:18)
   |
   |  Number of Conditions: 2
   |     Condition C1 --> (LL:12)
