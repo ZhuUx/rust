@@ -7,11 +7,11 @@
    LL|      2|    if a && b {
                           ^0
   ------------------
-  |---> MC/DC Decision Region (7:8) to (7:14)
+  |---> MC/DC Decision Region (LL:8) to (7:14)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (7:8)
-  |     Condition C2 --> (7:13)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:13)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -33,11 +33,11 @@
    LL|      2|    if a && b {
                           ^1
   ------------------
-  |---> MC/DC Decision Region (15:8) to (15:14)
+  |---> MC/DC Decision Region (LL:8) to (15:14)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (15:8)
-  |     Condition C2 --> (15:13)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:13)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -59,11 +59,11 @@
    LL|      2|fn mcdc_check_b(a: bool, b: bool) {
    LL|      2|    if a && b {
   ------------------
-  |---> MC/DC Decision Region (23:8) to (23:14)
+  |---> MC/DC Decision Region (LL:8) to (23:14)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (23:8)
-  |     Condition C2 --> (23:13)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:13)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -86,11 +86,11 @@
    LL|      3|    if a && b {
                           ^2
   ------------------
-  |---> MC/DC Decision Region (31:8) to (31:14)
+  |---> MC/DC Decision Region (LL:8) to (31:14)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (31:8)
-  |     Condition C2 --> (31:13)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:13)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -116,12 +116,12 @@
    LL|      4|    if a && (b || c) {
                            ^3   ^2
   ------------------
-  |---> MC/DC Decision Region (41:8) to (41:21)
+  |---> MC/DC Decision Region (LL:8) to (41:21)
   |
   |  Number of Conditions: 3
-  |     Condition C1 --> (41:8)
-  |     Condition C2 --> (41:14)
-  |     Condition C3 --> (41:19)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:14)
+  |     Condition C3 --> (LL:19)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -149,12 +149,12 @@
    LL|      4|    if (a || b) && c {
                            ^1
   ------------------
-  |---> MC/DC Decision Region (51:8) to (51:21)
+  |---> MC/DC Decision Region (LL:8) to (51:21)
   |
   |  Number of Conditions: 3
-  |     Condition C1 --> (51:9)
-  |     Condition C2 --> (51:14)
-  |     Condition C3 --> (51:20)
+  |     Condition C1 --> (LL:9)
+  |     Condition C2 --> (LL:14)
+  |     Condition C3 --> (LL:20)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -179,11 +179,11 @@
    LL|      3|    if a || b {
                           ^0
   ------------------
-  |---> MC/DC Decision Region (59:8) to (59:14)
+  |---> MC/DC Decision Region (LL:8) to (59:14)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (59:8)
-  |     Condition C2 --> (59:13)
+  |     Condition C1 --> (LL:8)
+  |     Condition C2 --> (LL:13)
   |
   |  Executed MC/DC Test Vectors:
   |
@@ -199,11 +199,11 @@
    LL|      3|        if b && c {
                               ^2
   ------------------
-  |---> MC/DC Decision Region (61:12) to (61:18)
+  |---> MC/DC Decision Region (LL:12) to (61:18)
   |
   |  Number of Conditions: 2
-  |     Condition C1 --> (61:12)
-  |     Condition C2 --> (61:17)
+  |     Condition C1 --> (LL:12)
+  |     Condition C2 --> (LL:17)
   |
   |  Executed MC/DC Test Vectors:
   |
