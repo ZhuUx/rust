@@ -25,7 +25,7 @@ use rustc_middle::ty::layout::{
     FnAbiError, FnAbiOfHelpers, FnAbiRequest, HasParamEnv, HasTyCtxt, LayoutError, LayoutOfHelpers,
     TyAndLayout,
 };
-use rustc_middle::ty::{ParamEnv, Ty, TyCtxt, Instance};
+use rustc_middle::ty::{Instance, ParamEnv, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 use rustc_span::Span;
 use rustc_target::abi::{
@@ -1734,6 +1734,41 @@ impl<'a, 'gcc, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'gcc, 'tcx> {
         _num_counters: RValue<'gcc>,
         _index: RValue<'gcc>,
     ) {
+        unimplemented!();
+    }
+
+    fn mcdc_parameters(
+        &mut self,
+        _fn_name: Self::Value,
+        _hash: Self::Value,
+        _bitmap_bytes: Self::Value,
+    ) -> Self::Value {
+        unimplemented!();
+    }
+
+    fn mcdc_tvbitmap_update(
+        &mut self,
+        _fn_name: Self::Value,
+        _hash: Self::Value,
+        _bitmap_bytes: Self::Value,
+        _bitmap_index: Self::Value,
+        _mcdc_temp: Self::Value,
+    ) {
+        unimplemented!();
+    }
+
+    fn mcdc_condbitmap_update(
+        &mut self,
+        _fn_name: Self::Value,
+        _hash: Self::Value,
+        _cond_loc: Self::Value,
+        _mcdc_temp: Self::Value,
+        _bool_value: Self::Value,
+    ) {
+        unimplemented!();
+    }
+
+    fn mcdc_condbitmap_reset(&mut self, _mcdc_temp: Self::Value) {
         unimplemented!();
     }
 }
