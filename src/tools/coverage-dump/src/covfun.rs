@@ -75,8 +75,6 @@ pub(crate) fn dump_covfun_mappings(
                         println!("    true  = {}", expression_resolver.format_term(r#true));
                         println!("    false = {}", expression_resolver.format_term(r#false));
                     }
-
-                    MappingKind::MCDCDecision { .. } => {}
                     _ => (),
                 }
             }
@@ -162,28 +160,29 @@ impl<'a> Parser<'a> {
             match high {
                 0 => unreachable!("zero kind should have already been handled as a code mapping"),
                 2 => Ok(MappingKind::Skip),
-                4 | 6 => {
+                4 => {
                     let r#true = self.read_simple_term()?;
                     let r#false = self.read_simple_term()?;
-                    if high == 6 {
-                        let condition_id = self.read_uleb128_u32()?;
-                        let true_next_id = self.read_uleb128_u32()?;
-                        let false_next_id = self.read_uleb128_u32()?;
-                        Ok(MappingKind::MCDCBranch {
-                            r#true,
-                            r#false,
-                            condition_id,
-                            true_next_id,
-                            false_next_id,
-                        })
-                    } else {
-                        Ok(MappingKind::Branch { r#true, r#false })
-                    }
+                    Ok(MappingKind::Branch { r#true, r#false })
                 }
                 5 => {
                     let bitmap_idx = self.read_uleb128_u32()?;
                     let conditions_num = self.read_uleb128_u32()?;
                     Ok(MappingKind::MCDCDecision { bitmap_idx, conditions_num })
+                }
+                6 => {
+                    let r#true = self.read_simple_term()?;
+                    let r#false = self.read_simple_term()?;
+                    let condition_id = self.read_uleb128_u32()?;
+                    let true_next_id = self.read_uleb128_u32()?;
+                    let false_next_id = self.read_uleb128_u32()?;
+                    Ok(MappingKind::MCDCBranch {
+                        r#true,
+                        r#false,
+                        condition_id,
+                        true_next_id,
+                        false_next_id,
+                    })
                 }
 
                 _ => Err(anyhow!("unknown mapping kind: {raw_mapping_kind:#x}")),
