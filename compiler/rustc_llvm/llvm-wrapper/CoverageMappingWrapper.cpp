@@ -98,23 +98,26 @@ struct LLVMRustMCDCParameters {
 
 static coverage::CounterMappingRegion::MCDCParameters
 fromRust(LLVMRustMCDCParameters Params) {
+  auto parameter = coverage::CounterMappingRegion::MCDCParameters{};
   switch (Params.Tag) {
   case LLVMRustMCDCParametersTag::None:
-    return coverage::CounterMappingRegion::MCDCParameters{};
+    return parameter;
   case LLVMRustMCDCParametersTag::Decision:
-    return coverage::CounterMappingRegion::MCDCParameters{
-        .BitmapIdx =
-            static_cast<unsigned>(Params.Payload.DecisionParameters.BitmapIdx),
-        .NumConditions = static_cast<unsigned>(
-            Params.Payload.DecisionParameters.NumConditions)};
+    parameter.BitmapIdx =
+        static_cast<unsigned>(Params.Payload.DecisionParameters.BitmapIdx),
+    parameter.NumConditions =
+        static_cast<unsigned>(Params.Payload.DecisionParameters.NumConditions);
+    return parameter;
   case LLVMRustMCDCParametersTag::Branch:
-    return coverage::CounterMappingRegion::MCDCParameters{
-        .ID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-            Params.Payload.BranchParameters.ConditionID),
-        .FalseID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+    parameter.ID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+        Params.Payload.BranchParameters.ConditionID),
+    parameter.FalseID =
+        static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
             Params.Payload.BranchParameters.ConditionIDs[0]),
-        .TrueID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-            Params.Payload.BranchParameters.ConditionIDs[1])};
+    parameter.TrueID =
+        static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+            Params.Payload.BranchParameters.ConditionIDs[1]);
+    return parameter;
   }
   report_fatal_error("Bad LLVMRustMCDCParametersTag!");
 }
