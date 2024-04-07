@@ -17,13 +17,15 @@ pub(super) enum BcbMappingKind {
     /// Associates an ordinary executable code span with its corresponding BCB.
     Code(BasicCoverageBlock),
     /// Associates a branch span with BCBs for its true and false arms.
-    Branch {
+    Branch { true_bcb: BasicCoverageBlock, false_bcb: BasicCoverageBlock },
+    /// Associates a mcdc branch span with condition info besides fields for normal branch.
+    MCDCBranch {
         true_bcb: BasicCoverageBlock,
         false_bcb: BasicCoverageBlock,
         condition_info: ConditionInfo,
     },
-    /// Associates a decision with its join BCB.
-    Decision { end_bcbs: BTreeSet<BasicCoverageBlock>, bitmap_idx: u32, conditions_num: u16 },
+    /// Associates a mcdc decision with its join BCB.
+    MCDCDecision { end_bcbs: BTreeSet<BasicCoverageBlock>, bitmap_idx: u32, conditions_num: u16 },
 }
 
 #[derive(Debug)]
@@ -103,11 +105,12 @@ pub(super) fn generate_coverage_spans(
     for BcbMapping { kind, span: _ } in &mappings {
         match *kind {
             BcbMappingKind::Code(bcb) => insert(bcb),
-            BcbMappingKind::Branch { true_bcb, false_bcb, .. } => {
+            BcbMappingKind::Branch { true_bcb, false_bcb }
+            | BcbMappingKind::MCDCBranch { true_bcb, false_bcb, .. } => {
                 insert(true_bcb);
                 insert(false_bcb);
             }
-            BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
+            BcbMappingKind::MCDCDecision { bitmap_idx, conditions_num, .. } => {
                 // `bcb_has_mappings` is used for inject coverage counters
                 // but they are not needed for decision BCBs.
                 // While the length of test vector bitmap should be calculated here.

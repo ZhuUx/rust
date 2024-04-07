@@ -144,21 +144,18 @@ fn create_mappings<'tcx>(
         |BcbMapping { kind: bcb_mapping_kind, span }| {
             let kind = match *bcb_mapping_kind {
                 BcbMappingKind::Code(bcb) => MappingKind::Code(term_for_bcb(bcb)),
-                BcbMappingKind::Branch { true_bcb, false_bcb, condition_info } => {
-                    if condition_info.condition_id == ConditionId::NONE {
-                        MappingKind::Branch {
-                            true_term: term_for_bcb(true_bcb),
-                            false_term: term_for_bcb(false_bcb),
-                        }
-                    } else {
-                        MappingKind::MCDCBranch {
-                            true_term: term_for_bcb(true_bcb),
-                            false_term: term_for_bcb(false_bcb),
-                            mcdc_params: condition_info,
-                        }
+                BcbMappingKind::Branch { true_bcb, false_bcb } => MappingKind::Branch {
+                    true_term: term_for_bcb(true_bcb),
+                    false_term: term_for_bcb(false_bcb),
+                },
+                BcbMappingKind::MCDCBranch { true_bcb, false_bcb, condition_info } => {
+                    MappingKind::MCDCBranch {
+                        true_term: term_for_bcb(true_bcb),
+                        false_term: term_for_bcb(false_bcb),
+                        mcdc_params: condition_info,
                     }
                 }
-                BcbMappingKind::Decision { bitmap_idx, conditions_num, .. } => {
+                BcbMappingKind::MCDCDecision { bitmap_idx, conditions_num, .. } => {
                     MappingKind::MCDCDecision(DecisionInfo { bitmap_idx, conditions_num })
                 }
             };
@@ -236,7 +233,9 @@ fn inject_mcdc_statements<'tcx>(
     // Inject test vector update first because `inject_statement` always insert new statement at head.
     for (end_bcbs, bitmap_idx) in
         coverage_spans.all_bcb_mappings().filter_map(|mapping| match &mapping.kind {
-            BcbMappingKind::Decision { end_bcbs, bitmap_idx, .. } => Some((end_bcbs, *bitmap_idx)),
+            BcbMappingKind::MCDCDecision { end_bcbs, bitmap_idx, .. } => {
+                Some((end_bcbs, *bitmap_idx))
+            }
             _ => None,
         })
     {
@@ -248,10 +247,9 @@ fn inject_mcdc_statements<'tcx>(
 
     for (true_bcb, false_bcb, condition_id) in
         coverage_spans.all_bcb_mappings().filter_map(|mapping| match mapping.kind {
-            BcbMappingKind::Branch { true_bcb, false_bcb, condition_info } => (condition_info
-                .condition_id
-                != ConditionId::NONE)
-                .then_some((true_bcb, false_bcb, condition_info.condition_id)),
+            BcbMappingKind::MCDCBranch { true_bcb, false_bcb, condition_info } => {
+                Some((true_bcb, false_bcb, condition_info.condition_id))
+            }
             _ => None,
         })
     {

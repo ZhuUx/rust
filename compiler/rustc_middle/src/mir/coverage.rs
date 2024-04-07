@@ -278,14 +278,14 @@ pub struct BranchInfo {
     /// data structures without having to scan the entire body first.
     pub num_block_markers: usize,
     pub branch_spans: Vec<BranchSpan>,
-    pub decision_spans: Vec<DecisionSpan>,
+    pub mcdc_branch_spans: Vec<MCDCBranchSpan>,
+    pub mcdc_decision_spans: Vec<MCDCDecisionSpan>,
 }
 
 #[derive(Clone, Debug)]
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct BranchSpan {
     pub span: Span,
-    pub condition_info: ConditionInfo,
     pub true_marker: BlockMarkerId,
     pub false_marker: BlockMarkerId,
 }
@@ -308,6 +308,15 @@ impl Default for ConditionInfo {
     }
 }
 
+#[derive(Clone, Debug)]
+#[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
+pub struct MCDCBranchSpan {
+    pub span: Span,
+    pub condition_info: ConditionInfo,
+    pub true_marker: BlockMarkerId,
+    pub false_marker: BlockMarkerId,
+}
+
 #[derive(Copy, Clone, Debug)]
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub struct DecisionInfo {
@@ -317,8 +326,8 @@ pub struct DecisionInfo {
 
 #[derive(Clone, Debug)]
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
-pub struct DecisionSpan {
+pub struct MCDCDecisionSpan {
     pub span: Span,
     pub conditions_num: usize,
-    pub end_marker: Vec<BlockMarkerId>,
+    pub end_markers: Vec<BlockMarkerId>,
 }
