@@ -225,7 +225,7 @@ impl MappingKind {
         let two = |a, b| Some(a).into_iter().chain(Some(b));
         match *self {
             Self::Code(term) => one(term),
-            Self::Branch { true_term, false_term, .. } => two(true_term, false_term),
+            Self::Branch { true_term, false_term } => two(true_term, false_term),
             Self::MCDCBranch { true_term, false_term, .. } => two(true_term, false_term),
             Self::MCDCDecision(_) => zero(),
         }

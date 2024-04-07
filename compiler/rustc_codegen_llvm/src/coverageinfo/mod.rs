@@ -188,20 +188,20 @@ fn ensure_mcdc_parameters<'ll, 'tcx>(
     instance: Instance<'tcx>,
     function_coverage_info: &FunctionCoverageInfo,
 ) {
-    if bx
-        .coverage_context()
-        .is_some_and(|cx| !cx.mcdc_condition_bitmap_map.borrow().contains_key(&instance))
-    {
-        let fn_name = bx.get_pgo_func_name_var(instance);
-        let hash = bx.const_u64(function_coverage_info.function_source_hash);
-        let bitmap_bytes = bx.const_u32(function_coverage_info.mcdc_bitmap_bytes);
-        let cond_bitmap = bx.mcdc_parameters(fn_name, hash, bitmap_bytes);
-        bx.coverage_context()
-            .unwrap()
-            .mcdc_condition_bitmap_map
-            .borrow_mut()
-            .insert(instance, cond_bitmap);
+    let Some(cx) = bx.coverage_context() else { return };
+    if cx.mcdc_condition_bitmap_map.borrow().contains_key(&instance) {
+        return;
     }
+    
+    let fn_name = bx.get_pgo_func_name_var(instance);
+    let hash = bx.const_u64(function_coverage_info.function_source_hash);
+    let bitmap_bytes = bx.const_u32(function_coverage_info.mcdc_bitmap_bytes);
+    let cond_bitmap = bx.mcdc_parameters(fn_name, hash, bitmap_bytes);
+    bx.coverage_context()
+        .expect("already checked above")
+        .mcdc_condition_bitmap_map
+        .borrow_mut()
+        .insert(instance, cond_bitmap);
 }
 
 /// Calls llvm::createPGOFuncNameVar() with the given function instance's

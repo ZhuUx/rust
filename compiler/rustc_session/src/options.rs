@@ -947,13 +947,12 @@ mod parse {
             match option {
                 "no-branch" => {
                     slot.branch = false;
+                    slot.mcdc = false;
                 }
-                "branch" => {
-                    slot.branch = true;
-                }
+                "branch" => slot.branch = true,
                 "mcdc" => {
                     slot.branch = true;
-                    slot.mcdc = true
+                    slot.mcdc = true;
                 }
                 _ => return false,
             }

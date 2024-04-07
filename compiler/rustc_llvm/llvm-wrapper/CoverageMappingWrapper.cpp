@@ -82,16 +82,18 @@ struct LLVMRustMCDCBranchParameters {
   int16_t ConditionIDs[2];
 };
 
-union LLVMRustMCDCParametersPayload {
+struct LLVMRustMCDCParameters {
+  LLVMRustMCDCParametersTag Tag;
   LLVMRustMCDCDecisionParameters DecisionParameters;
   LLVMRustMCDCBranchParameters BranchParameters;
 };
 
-struct LLVMRustMCDCParameters {
-  LLVMRustMCDCParametersTag Tag;
-  LLVMRustMCDCParametersPayload Payload;
-};
-
+// LLVM representations for `MCDCParameters` evolved from LLVM 18 to 19.
+// Look at representations in 18
+// https://github.com/rust-lang/llvm-project/blob/66a2881a/llvm/include/llvm/ProfileData/Coverage/CoverageMapping.h#L253-L263
+// and representations in 19
+// https://github.com/llvm/llvm-project/blob/843cc474faefad1d639f4c44c1cf3ad7dbda76c8/llvm/include/llvm/ProfileData/Coverage/MCDCTypes.h
+#if LLVM_VERSION_GE(18, 0) && LLVM_VERSION_LT(19, 0)
 static coverage::CounterMappingRegion::MCDCParameters
 fromRust(LLVMRustMCDCParameters Params) {
   auto parameter = coverage::CounterMappingRegion::MCDCParameters{};
@@ -117,6 +119,27 @@ fromRust(LLVMRustMCDCParameters Params) {
   }
   report_fatal_error("Bad LLVMRustMCDCParametersTag!");
 }
+#elif LLVM_VERSION_GE(19, 0)
+static coverage::mcdc::MCDCParameters fromRust(LLVMRustMCDCParameters Params) {
+  switch (Params.Tag) {
+  case LLVMRustMCDCParametersTag::None:
+    return coverage::mcdc::MCDCParameters;
+  case LLVMRustMCDCParametersTag::Decision:
+    return coverage::mcdc::DecisionParameters(
+        Params.Payload.DecisionParameters.BitmapIdx,
+        Params.Payload.DecisionParameters.NumConditions);
+  case LLVMRustMCDCParametersTag::Branch:
+    return coverage::mcdc::BranchParameters(
+        static_cast<coverage::mcdc::ConditionID>(
+            Params.Payload.BranchParameters.ConditionID),
+        {static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+             Params.Payload.BranchParameters.ConditionIDs[0]),
+         static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
+             Params.Payload.BranchParameters.ConditionIDs[1])});
+  }
+  report_fatal_error("Bad LLVMRustMCDCParametersTag!");
+}
+#endif
 
 // FFI equivalent of struct `llvm::coverage::CounterMappingRegion`
 // https://github.com/rust-lang/llvm-project/blob/ea6fa9c2/llvm/include/llvm/ProfileData/Coverage/CoverageMapping.h#L211-L304
@@ -191,7 +214,7 @@ extern "C" void LLVMRustCoverageWriteMappingToBuffer(
            RustMappingRegions, NumMappingRegions)) {
     MappingRegions.emplace_back(
         fromRust(Region.Count), fromRust(Region.FalseCount),
-#if LLVM_VERSION_GE(18, 0) && LLVM_VERSION_LT(19, 0)
+#if LLVM_VERSION_GE(18, 0)
         fromRust(Region.MCDCParameters),
 #endif
         Region.FileID, Region.ExpandedFileID, // File IDs, then region info.

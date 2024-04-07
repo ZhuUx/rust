@@ -233,12 +233,10 @@ fn inject_mcdc_statements<'tcx>(
         return;
     }
 
-    // Inject test vector update first because inject statement always inject new statement at head.
+    // Inject test vector update first because `inject_statement` always insert new statement at head.
     for (end_bcbs, bitmap_idx) in
         coverage_spans.all_bcb_mappings().filter_map(|mapping| match &mapping.kind {
-            BcbMappingKind::Decision { end_bcbs: end_bcb, bitmap_idx, .. } => {
-                Some((end_bcb, *bitmap_idx))
-            }
+            BcbMappingKind::Decision { end_bcbs, bitmap_idx, .. } => Some((end_bcbs, *bitmap_idx)),
             _ => None,
         })
     {

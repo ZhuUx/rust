@@ -115,7 +115,7 @@ pub mod mcdc {
 
     /// Must match the layout of `LLVMRustMCDCDecisionParameters`.
     #[repr(C)]
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Clone, Copy, Debug, Default)]
     pub struct DecisionParameters {
         bitmap_idx: u32,
         conditions_num: u16,
@@ -126,19 +126,47 @@ pub mod mcdc {
 
     /// Must match the layout of `LLVMRustMCDCBranchParameters`.
     #[repr(C)]
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Clone, Copy, Debug, Default)]
     pub struct BranchParameters {
         condition_id: LLVMConditionId,
         condition_ids: [LLVMConditionId; 2],
     }
 
-    /// Same layout with `LLVMRustMCDCParameters`
     #[repr(C, u8)]
-    #[derive(Clone, Copy, Debug)]
-    pub enum Parameters {
+    pub enum ParameterTag {
         None,
-        Decision(DecisionParameters),
-        Branch(BranchParameters),
+        Decision,
+        Branch,
+    }
+    /// Same layout with `LLVMRustMCDCParameters`
+    #[repr(C)]
+    #[derive(Clone, Copy, Debug)]
+    pub struct Parameters {
+        tag: ParameterTag,
+        decision_params: DecisionParameters,
+        branch_params: BranchParameters,
+    }
+
+    impl Parameters {
+        pub fn none() -> Self {
+            Self {
+                tag: ParameterTag::None,
+                decision_params: Default::default(),
+                branch_params: Default::default(),
+            }
+        }
+        pub fn decision(decision_params: DecisionParameters) -> Self {
+            Self { tag: ParameterTag::Decision, decision_params, branch_params: Default::default() }
+        }
+        pub fn branch(branch_params: BranchParameters) -> Self {
+            Self { tag: ParameterTag::Branch, decision_params: Default, branch_params }
+        }
+    }
+
+    impl Default for Parameters {
+        fn default() -> Self {
+            Self::none()
+        }
     }
 
     impl From<ConditionInfo> for BranchParameters {
@@ -287,14 +315,9 @@ impl CounterMappingRegion {
         end_line: u32,
         end_col: u32,
     ) -> Self {
-        let mcdc_params = condition_info
-            .map(mcdc::BranchParameters::from)
-            .map(mcdc::Parameters::Branch)
-            .unwrap_or(mcdc::Parameters::None);
-        let kind = match mcdc_params {
-            mcdc::Parameters::None => RegionKind::BranchRegion,
-            mcdc::Parameters::Branch(_) => RegionKind::MCDCBranchRegion,
-            _ => unreachable!("invalid mcdc params for branch"),
+        let (kind, mcdc_params) = match condition_info {
+            Some(info) => (RegionKind::MCDCBranchRegion, mcdc::Parameters::branch(info.into())),
+            None => (RegionKind::BranchRegion, Default::default()),
         };
         Self {
             counter,
