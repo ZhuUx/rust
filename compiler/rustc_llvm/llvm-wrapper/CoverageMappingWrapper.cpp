@@ -66,7 +66,7 @@ fromRust(LLVMRustCounterMappingRegionKind Kind) {
   report_fatal_error("Bad LLVMRustCounterMappingRegionKind!");
 }
 
-enum class LLVMRustMCDCParametersTag : uint8_t {
+enum LLVMRustMCDCParametersTag {
   None = 0,
   Decision = 1,
   Branch = 2,
@@ -102,40 +102,40 @@ fromRust(LLVMRustMCDCParameters Params) {
     return parameter;
   case LLVMRustMCDCParametersTag::Decision:
     parameter.BitmapIdx =
-        static_cast<unsigned>(Params.Payload.DecisionParameters.BitmapIdx),
+        static_cast<unsigned>(Params.DecisionParameters.BitmapIdx),
     parameter.NumConditions =
-        static_cast<unsigned>(Params.Payload.DecisionParameters.NumConditions);
+        static_cast<unsigned>(Params.DecisionParameters.NumConditions);
     return parameter;
   case LLVMRustMCDCParametersTag::Branch:
     parameter.ID = static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-        Params.Payload.BranchParameters.ConditionID),
+        Params.BranchParameters.ConditionID),
     parameter.FalseID =
         static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-            Params.Payload.BranchParameters.ConditionIDs[0]),
+            Params.BranchParameters.ConditionIDs[0]),
     parameter.TrueID =
         static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-            Params.Payload.BranchParameters.ConditionIDs[1]);
+            Params.BranchParameters.ConditionIDs[1]);
     return parameter;
   }
   report_fatal_error("Bad LLVMRustMCDCParametersTag!");
 }
 #elif LLVM_VERSION_GE(19, 0)
-static coverage::mcdc::MCDCParameters fromRust(LLVMRustMCDCParameters Params) {
+static coverage::mcdc::Parameters fromRust(LLVMRustMCDCParameters Params) {
   switch (Params.Tag) {
   case LLVMRustMCDCParametersTag::None:
-    return coverage::mcdc::MCDCParameters;
+    return std::monostate();
   case LLVMRustMCDCParametersTag::Decision:
     return coverage::mcdc::DecisionParameters(
-        Params.Payload.DecisionParameters.BitmapIdx,
-        Params.Payload.DecisionParameters.NumConditions);
+        Params.DecisionParameters.BitmapIdx,
+        Params.DecisionParameters.NumConditions);
   case LLVMRustMCDCParametersTag::Branch:
     return coverage::mcdc::BranchParameters(
         static_cast<coverage::mcdc::ConditionID>(
-            Params.Payload.BranchParameters.ConditionID),
-        {static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-             Params.Payload.BranchParameters.ConditionIDs[0]),
-         static_cast<coverage::CounterMappingRegion::MCDCConditionID>(
-             Params.Payload.BranchParameters.ConditionIDs[1])});
+            Params.BranchParameters.ConditionID),
+        {static_cast<coverage::mcdc::ConditionID>(
+             Params.BranchParameters.ConditionIDs[0]),
+         static_cast<coverage::mcdc::ConditionID>(
+             Params.BranchParameters.ConditionIDs[1])});
   }
   report_fatal_error("Bad LLVMRustMCDCParametersTag!");
 }
@@ -214,7 +214,8 @@ extern "C" void LLVMRustCoverageWriteMappingToBuffer(
            RustMappingRegions, NumMappingRegions)) {
     MappingRegions.emplace_back(
         fromRust(Region.Count), fromRust(Region.FalseCount),
-#if LLVM_VERSION_GE(18, 0)
+#if LLVM_VERSION_GE(18, 0) && LLVM_VERSION_LT(19, 0)
+        // LLVM 19 may move this argument to last.
         fromRust(Region.MCDCParameters),
 #endif
         Region.FileID, Region.ExpandedFileID, // File IDs, then region info.

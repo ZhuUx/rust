@@ -192,7 +192,7 @@ fn ensure_mcdc_parameters<'ll, 'tcx>(
     if cx.mcdc_condition_bitmap_map.borrow().contains_key(&instance) {
         return;
     }
-    
+
     let fn_name = bx.get_pgo_func_name_var(instance);
     let hash = bx.const_u64(function_coverage_info.function_source_hash);
     let bitmap_bytes = bx.const_u32(function_coverage_info.mcdc_bitmap_bytes);

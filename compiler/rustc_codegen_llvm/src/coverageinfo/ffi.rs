@@ -132,11 +132,12 @@ pub mod mcdc {
         condition_ids: [LLVMConditionId; 2],
     }
 
-    #[repr(C, u8)]
+    #[repr(C)]
+    #[derive(Clone, Copy, Debug)]
     pub enum ParameterTag {
-        None,
-        Decision,
-        Branch,
+        None = 0,
+        Decision = 1,
+        Branch = 2,
     }
     /// Same layout with `LLVMRustMCDCParameters`
     #[repr(C)]
@@ -159,13 +160,7 @@ pub mod mcdc {
             Self { tag: ParameterTag::Decision, decision_params, branch_params: Default::default() }
         }
         pub fn branch(branch_params: BranchParameters) -> Self {
-            Self { tag: ParameterTag::Branch, decision_params: Default, branch_params }
-        }
-    }
-
-    impl Default for Parameters {
-        fn default() -> Self {
-            Self::none()
+            Self { tag: ParameterTag::Branch, decision_params: Default::default(), branch_params }
         }
     }
 
@@ -294,7 +289,7 @@ impl CounterMappingRegion {
         Self {
             counter,
             false_counter: Counter::ZERO,
-            mcdc_params: mcdc::Parameters::None,
+            mcdc_params: mcdc::Parameters::none(),
             file_id,
             expanded_file_id: 0,
             start_line,
@@ -317,7 +312,7 @@ impl CounterMappingRegion {
     ) -> Self {
         let (kind, mcdc_params) = match condition_info {
             Some(info) => (RegionKind::MCDCBranchRegion, mcdc::Parameters::branch(info.into())),
-            None => (RegionKind::BranchRegion, Default::default()),
+            None => (RegionKind::BranchRegion, mcdc::Parameters::none()),
         };
         Self {
             counter,
@@ -341,7 +336,7 @@ impl CounterMappingRegion {
         end_line: u32,
         end_col: u32,
     ) -> Self {
-        let mcdc_params = mcdc::Parameters::Decision(decision_info.into());
+        let mcdc_params = mcdc::Parameters::decision(decision_info.into());
 
         Self {
             counter: Counter::ZERO,
@@ -371,7 +366,7 @@ impl CounterMappingRegion {
         Self {
             counter: Counter::ZERO,
             false_counter: Counter::ZERO,
-            mcdc_params: mcdc::Parameters::None,
+            mcdc_params: mcdc::Parameters::none(),
             file_id,
             expanded_file_id,
             start_line,
@@ -395,7 +390,7 @@ impl CounterMappingRegion {
         Self {
             counter: Counter::ZERO,
             false_counter: Counter::ZERO,
-            mcdc_params: mcdc::Parameters::None,
+            mcdc_params: mcdc::Parameters::none(),
             file_id,
             expanded_file_id: 0,
             start_line,
@@ -420,7 +415,7 @@ impl CounterMappingRegion {
         Self {
             counter,
             false_counter: Counter::ZERO,
-            mcdc_params: mcdc::Parameters::None,
+            mcdc_params: mcdc::Parameters::none(),
             file_id,
             expanded_file_id: 0,
             start_line,
