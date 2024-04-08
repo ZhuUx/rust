@@ -192,46 +192,46 @@ impl MCDCState {
             .then(|| Self { decision_stack: VecDeque::new(), processing_decision: None })
     }
 
-    /// At first we assign ConditionIds for each sub expression.
-    /// If the sub expression is composite, re-assign its ConditionId to its LHS and generate a new ConditionId for its RHS.
-    ///
-    /// Example: "x = (A && B) || (C && D) || (D && F)"
-    ///
-    ///      Visit Depth1:
-    ///              (A && B) || (C && D) || (D && F)
-    ///              ^-------LHS--------^    ^-RHS--^
-    ///                      ID=1              ID=2
-    ///
-    ///      Visit LHS-Depth2:
-    ///              (A && B) || (C && D)
-    ///              ^-LHS--^    ^-RHS--^
-    ///                ID=1        ID=3
-    ///
-    ///      Visit LHS-Depth3:
-    ///               (A && B)
-    ///               LHS   RHS
-    ///               ID=1  ID=4
-    ///
-    ///      Visit RHS-Depth3:
-    ///                         (C && D)
-    ///                         LHS   RHS
-    ///                         ID=3  ID=5
-    ///
-    ///      Visit RHS-Depth2:              (D && F)
-    ///                                     LHS   RHS
-    ///                                     ID=2  ID=6
-    ///
-    ///      Visit Depth1:
-    ///              (A && B)  || (C && D)  || (D && F)
-    ///              ID=1  ID=4   ID=3  ID=5   ID=2  ID=6
-    ///
-    /// A node ID of '0' always means MC/DC isn't being tracked.
-    ///
-    /// If a "next" node ID is '0', it means it's the end of the test vector.
-    ///
-    /// As the compiler tracks expression in pre-order, we can ensure that condition info of parents are always properly assigned when their children are visited.
-    /// - If the op is AND, the "false_next" of LHS and RHS should be the parent's "false_next". While "true_next" of the LHS is the RHS, the "true next" of RHS is the parent's "true_next".
-    /// - If the op is OR, the "true_next" of LHS and RHS should be the parent's "true_next". While "false_next" of the LHS is the RHS, the "false next" of RHS is the parent's "false_next".
+    // At first we assign ConditionIds for each sub expression.
+    // If the sub expression is composite, re-assign its ConditionId to its LHS and generate a new ConditionId for its RHS.
+    //
+    // Example: "x = (A && B) || (C && D) || (D && F)"
+    //
+    //      Visit Depth1:
+    //              (A && B) || (C && D) || (D && F)
+    //              ^-------LHS--------^    ^-RHS--^
+    //                      ID=1              ID=2
+    //
+    //      Visit LHS-Depth2:
+    //              (A && B) || (C && D)
+    //              ^-LHS--^    ^-RHS--^
+    //                ID=1        ID=3
+    //
+    //      Visit LHS-Depth3:
+    //               (A && B)
+    //               LHS   RHS
+    //               ID=1  ID=4
+    //
+    //      Visit RHS-Depth3:
+    //                         (C && D)
+    //                         LHS   RHS
+    //                         ID=3  ID=5
+    //
+    //      Visit RHS-Depth2:              (D && F)
+    //                                     LHS   RHS
+    //                                     ID=2  ID=6
+    //
+    //      Visit Depth1:
+    //              (A && B)  || (C && D)  || (D && F)
+    //              ID=1  ID=4   ID=3  ID=5   ID=2  ID=6
+    //
+    // A node ID of '0' always means MC/DC isn't being tracked.
+    //
+    // If a "next" node ID is '0', it means it's the end of the test vector.
+    //
+    // As the compiler tracks expression in pre-order, we can ensure that condition info of parents are always properly assigned when their children are visited.
+    // - If the op is AND, the "false_next" of LHS and RHS should be the parent's "false_next". While "true_next" of the LHS is the RHS, the "true next" of RHS is the parent's "true_next".
+    // - If the op is OR, the "true_next" of LHS and RHS should be the parent's "true_next". While "false_next" of the LHS is the RHS, the "false next" of RHS is the parent's "false_next".
     fn record_conditions(&mut self, op: LogicalOp, span: Span) {
         let decision = match self.processing_decision.as_mut() {
             Some(decision) => {
