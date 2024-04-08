@@ -1,5 +1,6 @@
    LL|       |#![feature(coverage_attribute)]
    LL|       |//@ edition: 2021
+   LL|       |//@ min-llvm-version: 18
    LL|       |//@ compile-flags: -Zcoverage-options=mcdc
    LL|       |//@ llvm-cov-flags: --show-mcdc
    LL|       |
