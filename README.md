@@ -1,77 +1,43 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-light.svg">
-    <img alt="The Rust Programming Language: A language empowering everyone to build reliable and efficient software"
-         src="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-light.svg"
-         width="50%">
-  </picture>
+This repository is created for implementating instrumentation-based [modified condition/decision coverage](https://en.wikipedia.org/wiki/Modified_condition/decision_coverage) in rust compiler based on llvm.
 
-[Website][Rust] | [Getting started] | [Learn] | [Documentation] | [Contributing]
-</div>
+It is still under development and waiting for more tests. All changes are committed to the master branch.
 
-This is the main source code repository for [Rust]. It contains the compiler,
-standard library, and documentation.
+## Roadmap
 
-[Rust]: https://www.rust-lang.org/
-[Getting Started]: https://www.rust-lang.org/learn/get-started
-[Learn]: https://www.rust-lang.org/learn
-[Documentation]: https://www.rust-lang.org/learn#learn-use
-[Contributing]: CONTRIBUTING.md
+See the [track issure](https://github.com/rust-lang/rust/issues/124144)
 
-## Why Rust?
+## Quick start
 
-- **Performance:** Fast and memory-efficient, suitable for critical services, embedded devices, and easily integrate with other languages.
+To run tests
 
-- **Reliability:** Our rich type system and ownership model ensure memory and thread safety, reducing bugs at compile-time.
+```bash
+git clone https://github.com/ZhuUx/rust.git
+git checkout master
+./x build --stage 1
+./x test tests/coverage/mcdc_if.rs
+```
 
-- **Productivity:** Comprehensive documentation, a compiler committed to providing great diagnostics, and advanced tooling including package manager and build tool ([Cargo]), auto-formatter ([rustfmt]), linter ([Clippy]) and editor support ([rust-analyzer]).
+To check code of `foo`
+```bash
+export PATH=path/to/llvm-build:$PATH
+rustup toolchain link mcdc build/host/stage1
+cargo +mcdc rustc --bin foo -- -Cinstrument-coverage -Zcoverage-options=mcdc
+cd target/debug
+LLVM_PROFILE_FILE="foo.profraw" ./foo
+llvm-profdata merge -sparse foo.profraw -o foo.profdata   
+llvm-cov show ./foo -instr-profile=foo.profdata --show-mcdc
+```
 
-[Cargo]: https://github.com/rust-lang/cargo
-[rustfmt]: https://github.com/rust-lang/rustfmt
-[Clippy]: https://github.com/rust-lang/rust-clippy
-[rust-analyzer]: https://github.com/rust-lang/rust-analyzer
+Note that if a custom llvm is used, the llvm version should be 18 or later.
 
-## Quick Start
+## Acknowledgment & Credits
 
-Read ["Installation"] from [The Book].
+This repository only contains works by [Banma](https://www.ebanma.com). But mcdc implementation for rust also is co-authored by [RenjiSann](https://github.com/RenjiSann) from [Adacore](https://www.adacore.com), [Zalathar](https://github.com/Zalathar).
 
-["Installation"]: https://doc.rust-lang.org/book/ch01-01-installation.html
-[The Book]: https://doc.rust-lang.org/book/index.html
+[evodius96](https://github.com/evodius96) lands mcdc implementation on llvm and clarifies the details.
 
-## Installing from Source
+ implements branch coverage, which introduces essential base for mcdc, and reviews a lot.
 
-If you really want to install from source (though this is not recommended), see
-[INSTALL.md](INSTALL.md).
+[Ferrous](https://ferrous-systems.com) shares their research about mcdc in rust.
 
-## Getting Help
 
-See https://www.rust-lang.org/community for a list of chat platforms and forums.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-Rust is primarily distributed under the terms of both the MIT license and the
-Apache License (Version 2.0), with portions covered by various BSD-like
-licenses.
-
-See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT), and
-[COPYRIGHT](COPYRIGHT) for details.
-
-## Trademark
-
-[The Rust Foundation][rust-foundation] owns and protects the Rust and Cargo
-trademarks and logos (the "Rust Trademarks").
-
-If you want to use these names or brands, please read the
-[media guide][media-guide].
-
-Third-party logos may be subject to third-party copyrights and trademarks. See
-[Licenses][policies-licenses] for details.
-
-[rust-foundation]: https://foundation.rust-lang.org/
-[media-guide]: https://foundation.rust-lang.org/policies/logo-policy-and-media-guide/
-[policies-licenses]: https://www.rust-lang.org/policies/licenses
