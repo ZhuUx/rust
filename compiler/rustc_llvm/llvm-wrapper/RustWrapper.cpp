@@ -23,6 +23,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/Support/Signals.h"
 
+#include <cassert>
 #include <iostream>
 
 // for raw `write` in the bad-alloc handler
@@ -1529,18 +1530,33 @@ extern "C" LLVMValueRef LLVMRustGetInstrProfIncrementIntrinsic(LLVMModuleRef M) 
 }
 
 extern "C" LLVMValueRef LLVMRustGetInstrProfMCDCParametersIntrinsic(LLVMModuleRef M) {
+  assert(LLVM_VERSION_GE(18, 0));
+#if LLVM_VERSION_GE(18, 0)
   return wrap(llvm::Intrinsic::getDeclaration(unwrap(M),
               (llvm::Intrinsic::ID)llvm::Intrinsic::instrprof_mcdc_parameters));
+#else // Just make the wrapper can be compiled
+  return LLVMRustGetInstrProfIncrementIntrinsic(M);
+#endif
 }
 
 extern "C" LLVMValueRef LLVMRustGetInstrProfMCDCTVBitmapUpdateIntrinsic(LLVMModuleRef M) {
-  return wrap(llvm::Intrinsic::getDeclaration(unwrap(M),
-              (llvm::Intrinsic::ID)llvm::Intrinsic::instrprof_mcdc_tvbitmap_update));
+  assert(LLVM_VERSION_GE(18, 0));
+#if LLVM_VERSION_GE(18, 0)
+  return wrap(llvm::Intrinsic::getDeclaration(
+      unwrap(M), llvm::Intrinsic::instrprof_mcdc_tvbitmap_update));
+#else // Just make the wrapper can be compiled
+  return LLVMRustGetInstrProfIncrementIntrinsic(M);
+#endif
 }
 
 extern "C" LLVMValueRef LLVMRustGetInstrProfMCDCCondBitmapIntrinsic(LLVMModuleRef M) {
-  return wrap(llvm::Intrinsic::getDeclaration(unwrap(M),
-              (llvm::Intrinsic::ID)llvm::Intrinsic::instrprof_mcdc_condbitmap_update));
+  assert(LLVM_VERSION_GE(18, 0));
+#if LLVM_VERSION_GE(18, 0)
+  return wrap(llvm::Intrinsic::getDeclaration(
+      unwrap(M), llvm::Intrinsic::instrprof_mcdc_condbitmap_update));
+#else // Just make the wrapper can be compiled
+  return LLVMRustGetInstrProfIncrementIntrinsic(M);
+#endif
 }
 
 extern "C" LLVMValueRef LLVMRustBuildMemCpy(LLVMBuilderRef B,

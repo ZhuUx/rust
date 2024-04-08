@@ -58,10 +58,17 @@ fromRust(LLVMRustCounterMappingRegionKind Kind) {
     return coverage::CounterMappingRegion::GapRegion;
   case LLVMRustCounterMappingRegionKind::BranchRegion:
     return coverage::CounterMappingRegion::BranchRegion;
+#if LLVM_VERSION_GE(18, 0)
   case LLVMRustCounterMappingRegionKind::MCDCDecisionRegion:
     return coverage::CounterMappingRegion::MCDCDecisionRegion;
   case LLVMRustCounterMappingRegionKind::MCDCBranchRegion:
     return coverage::CounterMappingRegion::MCDCBranchRegion;
+#else
+  case LLVMRustCounterMappingRegionKind::MCDCDecisionRegion:
+    break;
+  case LLVMRustCounterMappingRegionKind::MCDCBranchRegion:
+    break;
+#endif
   }
   report_fatal_error("Bad LLVMRustCounterMappingRegionKind!");
 }

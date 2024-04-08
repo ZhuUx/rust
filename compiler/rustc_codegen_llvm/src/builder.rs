@@ -1246,6 +1246,8 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
     ) -> &'ll Value {
         debug!("mcdc_parameters() with args ({:?}, {:?}, {:?})", fn_name, hash, bitmap_bytes);
 
+        assert!(llvm_util::get_version() >= (18, 0, 0), "MCDC intrinsics require LLVM 18 or later");
+
         let llfn = unsafe { llvm::LLVMRustGetInstrProfMCDCParametersIntrinsic(self.cx().llmod) };
         let llty = self.cx.type_func(
             &[self.cx.type_ptr(), self.cx.type_i64(), self.cx.type_i32()],
@@ -1290,6 +1292,7 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
             "mcdc_tvbitmap_update() with args ({:?}, {:?}, {:?}, {:?}, {:?})",
             fn_name, hash, bitmap_bytes, bitmap_index, mcdc_temp
         );
+        assert!(llvm_util::get_version() >= (18, 0, 0), "MCDC intrinsics require LLVM 18 or later");
 
         let llfn =
             unsafe { llvm::LLVMRustGetInstrProfMCDCTVBitmapUpdateIntrinsic(self.cx().llmod) };
@@ -1326,6 +1329,11 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         mcdc_temp: Self::Value,
         bool_value: Self::Value,
     ) {
+        debug!(
+            "mcdc_condbitmap_update() with args ({:?}, {:?}, {:?}, {:?}, {:?})",
+            fn_name, hash, cond_loc, mcdc_temp, bool_value
+        );
+        assert!(llvm_util::get_version() >= (18, 0, 0), "MCDC intrinsics require LLVM 18 or later");
         let llfn = unsafe { llvm::LLVMRustGetInstrProfMCDCCondBitmapIntrinsic(self.cx().llmod) };
         let llty = self.cx.type_func(
             &[
