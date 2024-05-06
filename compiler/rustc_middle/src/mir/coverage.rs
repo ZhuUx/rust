@@ -52,6 +52,14 @@ rustc_index::newtype_index! {
 }
 
 rustc_index::newtype_index! {
+    /// ID of a mcdc decision. Used to identify decision in a function.
+    #[derive(HashStable)]
+    #[encodable]
+    #[debug_format = "DecisionId({})"]
+    pub struct DecisionId {}
+}
+
+rustc_index::newtype_index! {
     /// ID of a mcdc condition. Used by llvm to check mcdc coverage.
     ///
     /// Note for future: the max limit of 0xFFFF is probably too loose. Actually llvm does not
