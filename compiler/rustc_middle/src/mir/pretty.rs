@@ -499,14 +499,14 @@ fn write_coverage_branch_info(
     for coverage::MCDCBranchSpan {
         span,
         condition_info,
-        true_marker,
-        false_marker,
+        test_markers,
+        true_markers,
         decision_depth,
     } in mcdc_branch_spans
     {
         writeln!(
             w,
-            "{INDENT}coverage mcdc branch {{ condition_id: {:?}, true: {true_marker:?}, false: {false_marker:?}, depth: {decision_depth:?} }} => {span:?}",
+            "{INDENT}coverage mcdc branch {{ condition_id: {:?}, test: {test_markers:?}, true: {true_markers:?}, depth: {decision_depth:?} }} => {span:?}",
             condition_info.map(|info| info.condition_id)
         )?;
     }

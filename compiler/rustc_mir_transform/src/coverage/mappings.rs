@@ -34,8 +34,8 @@ pub(super) struct BranchPair {
 #[derive(Debug)]
 pub(super) struct MCDCBranch {
     pub(super) span: Span,
-    pub(super) true_bcb: BasicCoverageBlock,
-    pub(super) false_bcb: BasicCoverageBlock,
+    pub(super) test_bcbs: Vec<BasicCoverageBlock>,
+    pub(super) true_bcbs: Vec<BasicCoverageBlock>,
     /// If `None`, this actually represents a normal branch mapping inserted
     /// for code that was too complex for MC/DC.
     pub(super) condition_info: Option<ConditionInfo>,
@@ -135,9 +135,8 @@ impl ExtractedMappings {
             insert(true_bcb);
             insert(false_bcb);
         }
-        for &MCDCBranch { true_bcb, false_bcb, .. } in mcdc_branches {
-            insert(true_bcb);
-            insert(false_bcb);
+        for MCDCBranch { test_bcbs, true_bcbs, .. } in mcdc_branches {
+            test_bcbs.into_iter().chain(true_bcbs.into_iter()).copied().for_each(&mut insert);
         }
 
         // MC/DC decisions refer to BCBs, but don't require those BCBs to have counters.
@@ -227,7 +226,7 @@ pub(super) fn extract_mcdc_mappings(
         |marker: BlockMarkerId| basic_coverage_blocks.bcb_from_bb(block_markers[marker]?);
 
     let check_branch_bcb =
-        |raw_span: Span, true_marker: BlockMarkerId, false_marker: BlockMarkerId| {
+        |raw_span: Span, test_markers: &[BlockMarkerId], true_markers: &[BlockMarkerId]| {
             // For now, ignore any branch span that was introduced by
             // expansion. This makes things like assert macros less noisy.
             if !raw_span.ctxt().outer_expn_data().is_root() {
@@ -235,22 +234,25 @@ pub(super) fn extract_mcdc_mappings(
             }
             let (span, _) = unexpand_into_body_span_with_visible_macro(raw_span, body_span)?;
 
-            let true_bcb = bcb_from_marker(true_marker)?;
-            let false_bcb = bcb_from_marker(false_marker)?;
-            Some((span, true_bcb, false_bcb))
+            let test_bcbs =
+                test_markers.into_iter().copied().map(&bcb_from_marker).collect::<Option<_>>()?;
+            let true_bcbs =
+                true_markers.into_iter().copied().map(&bcb_from_marker).collect::<Option<_>>()?;
+
+            Some((span, test_bcbs, true_bcbs))
         };
 
     mcdc_branches.extend(branch_info.mcdc_branch_spans.iter().filter_map(
         |&mir::coverage::MCDCBranchSpan {
              span: raw_span,
              condition_info,
-             true_marker,
-             false_marker,
+             ref test_markers,
+             ref true_markers,
              decision_depth,
          }| {
-            let (span, true_bcb, false_bcb) =
-                check_branch_bcb(raw_span, true_marker, false_marker)?;
-            Some(MCDCBranch { span, true_bcb, false_bcb, condition_info, decision_depth })
+            let (span, test_bcbs, true_bcbs) =
+                check_branch_bcb(raw_span, test_markers, true_markers)?;
+            Some(MCDCBranch { span, test_bcbs, true_bcbs, condition_info, decision_depth })
         },
     ));
 

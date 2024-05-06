@@ -155,7 +155,6 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 let place =
                     unpack!(block = this.as_temp(block, Some(temp_scope), expr_id, mutability));
                 this.mcdc_decrement_depth_if_enabled();
-
                 let operand = Operand::Move(Place::from(place));
 
                 let then_block = this.cfg.start_new_block();
@@ -164,7 +163,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
 
                 // Record branch coverage info for this condition.
                 // (Does nothing if branch coverage is not enabled.)
-                this.visit_coverage_branch_condition(expr_id, then_block, else_block);
+                this.visit_coverage_branch_condition(expr_id, block, then_block, else_block);
 
                 let source_info = this.source_info(expr_span);
                 this.cfg.terminate(block, source_info, term);

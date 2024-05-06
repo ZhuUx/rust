@@ -19,7 +19,7 @@ use rustc_span::def_id::LocalDefId;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, Pos, RelativeBytePos, Span, Symbol};
 
-use crate::coverage::counters::{CounterIncrementSite, CoverageCounters};
+use crate::coverage::counters::{BcbCounter, CounterIncrementSite, CoverageCounters};
 use crate::coverage::graph::{BasicCoverageBlock, CoverageGraph};
 use crate::coverage::mappings::ExtractedMappings;
 use crate::MirPass;
@@ -87,10 +87,10 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
     }
 
     let bcb_has_counter_mappings = |bcb| bcbs_with_counter_mappings.contains(bcb);
-    let coverage_counters =
+    let mut coverage_counters =
         CoverageCounters::make_bcb_counters(&basic_coverage_blocks, bcb_has_counter_mappings);
 
-    let mappings = create_mappings(tcx, &hir_info, &extracted_mappings, &coverage_counters);
+    let mappings = create_mappings(tcx, &hir_info, &extracted_mappings, &mut coverage_counters);
     if mappings.is_empty() {
         // No spans could be converted into valid mappings, so skip this function.
         debug!("no spans could be converted into valid mappings; skipping");
@@ -132,7 +132,7 @@ fn create_mappings<'tcx>(
     tcx: TyCtxt<'tcx>,
     hir_info: &ExtractedHirInfo,
     extracted_mappings: &ExtractedMappings,
-    coverage_counters: &CoverageCounters,
+    coverage_counters: &mut CoverageCounters,
 ) -> Vec<Mapping> {
     let source_map = tcx.sess.source_map();
     let body_span = hir_info.body_span;
@@ -182,10 +182,53 @@ fn create_mappings<'tcx>(
     ));
 
     mappings.extend(mcdc_branches.iter().filter_map(
-        |&mappings::MCDCBranch { span, true_bcb, false_bcb, condition_info, decision_depth: _ }| {
+        |&mappings::MCDCBranch {
+             span,
+             ref test_bcbs,
+             ref true_bcbs,
+             condition_info,
+             decision_depth: _,
+         }| {
             let code_region = region_for_span(span)?;
-            let true_term = term_for_bcb(true_bcb);
-            let false_term = term_for_bcb(false_bcb);
+            let mut counter_for_bcbs_group = |bcbs: &[BasicCoverageBlock]| {
+                let counters = bcbs
+                    .into_iter()
+                    .copied()
+                    .map(|bcb| {
+                        coverage_counters
+                            .bcb_counter(bcb)
+                            .expect("all BCBs with spans were given counters")
+                    })
+                    .collect::<Vec<_>>();
+                counters
+                    .into_iter()
+                    .fold(None, |acc, val| Some(coverage_counters.make_sum_expression(acc, val)))
+                    .expect("counters must be non-empty")
+            };
+            let test_counter = counter_for_bcbs_group(test_bcbs);
+            let true_counter = counter_for_bcbs_group(true_bcbs);
+            let false_counter = coverage_counters.make_expression(
+                test_counter,
+                mir::coverage::Op::Subtract,
+                true_counter,
+            );
+
+            let mut record_combined_bcbs_expression = |counter: BcbCounter| {
+                if let BcbCounter::Expression { id } = counter {
+                    for &bcb in true_bcbs {
+                        coverage_counters.bind_combined_coverage_expressions_to_bcb(bcb, id);
+                    }
+                }
+            };
+            // Only terms trace more than 1 bcb need to be recorded as combined bcb expressions,
+            // otherwise the unique expression associated to the bcb is enough.
+            if true_bcbs.len() > 1 {
+                record_combined_bcbs_expression(true_counter);
+            }
+            record_combined_bcbs_expression(false_counter);
+            let true_term = true_counter.as_term();
+            let false_term = false_counter.as_term();
+
             let kind = match condition_info {
                 Some(mcdc_params) => MappingKind::MCDCBranch { true_term, false_term, mcdc_params },
                 None => MappingKind::Branch { true_term, false_term },
@@ -255,6 +298,16 @@ fn inject_coverage_statements<'tcx>(
             basic_coverage_blocks[bcb].leader_bb(),
         );
     }
+
+    for (bcb, expressions_id) in coverage_counters.bcb_nodes_with_combined_coverage_expressions() {
+        for &id in expressions_id {
+            inject_statement(
+                mir_body,
+                CoverageKind::ExpressionUsed { id },
+                basic_coverage_blocks[bcb].leader_bb(),
+            )
+        }
+    }
 }
 
 /// For each conditions inject statements to update condition bitmap after it has been evaluated.
@@ -283,24 +336,24 @@ fn inject_mcdc_statements<'tcx>(
         }
     }
 
-    for &mappings::MCDCBranch { span: _, true_bcb, false_bcb, condition_info, decision_depth } in
-        &extracted_mappings.mcdc_branches
+    for &mappings::MCDCBranch {
+        span: _,
+        test_bcbs: _,
+        ref true_bcbs,
+        condition_info,
+        decision_depth,
+    } in &extracted_mappings.mcdc_branches
     {
         let Some(condition_info) = condition_info else { continue };
         let id = condition_info.condition_id;
-
-        let true_bb = basic_coverage_blocks[true_bcb].leader_bb();
-        inject_statement(
-            mir_body,
-            CoverageKind::CondBitmapUpdate { id, value: true, decision_depth },
-            true_bb,
-        );
-        let false_bb = basic_coverage_blocks[false_bcb].leader_bb();
-        inject_statement(
-            mir_body,
-            CoverageKind::CondBitmapUpdate { id, value: false, decision_depth },
-            false_bb,
-        );
+        for true_bcb in true_bcbs {
+            let true_bb = basic_coverage_blocks[*true_bcb].leader_bb();
+            inject_statement(
+                mir_body,
+                CoverageKind::CondBitmapUpdate { id, value: true, decision_depth },
+                true_bb,
+            );
+        }
     }
 }
 

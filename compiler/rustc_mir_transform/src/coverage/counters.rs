@@ -1,4 +1,7 @@
-use std::fmt::{self, Debug};
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Debug},
+};
 
 use rustc_data_structures::captures::Captures;
 use rustc_data_structures::fx::FxHashMap;
@@ -58,6 +61,12 @@ pub(super) struct CoverageCounters {
     /// Table of expression data, associating each expression ID with its
     /// corresponding operator (+ or -) and its LHS/RHS operands.
     expressions: IndexVec<ExpressionId, Expression>,
+
+    /// Some terms referencing to composite expressions count sum execution times
+    /// of several basic coverage blocks. Mostly such coverage terms are used by patterns including or pattern.
+    /// Expressions for these terms should generate statements to some blocks in case
+    /// they were marked as unused at codegen.
+    combined_bcb_expressions: BTreeMap<BasicCoverageBlock, Vec<ExpressionId>>,
 }
 
 impl CoverageCounters {
@@ -75,6 +84,7 @@ impl CoverageCounters {
             bcb_counters: IndexVec::from_elem_n(None, num_bcbs),
             bcb_edge_counters: FxHashMap::default(),
             expressions: IndexVec::new(),
+            combined_bcb_expressions: BTreeMap::new(),
         };
 
         MakeBcbCounters::new(&mut this, basic_coverage_blocks)
@@ -88,7 +98,12 @@ impl CoverageCounters {
         BcbCounter::Counter { id }
     }
 
-    fn make_expression(&mut self, lhs: BcbCounter, op: Op, rhs: BcbCounter) -> BcbCounter {
+    pub(super) fn make_expression(
+        &mut self,
+        lhs: BcbCounter,
+        op: Op,
+        rhs: BcbCounter,
+    ) -> BcbCounter {
         let expression = Expression { lhs: lhs.as_term(), op, rhs: rhs.as_term() };
         let id = self.expressions.push(expression);
         BcbCounter::Expression { id }
@@ -97,7 +112,11 @@ impl CoverageCounters {
     /// Variant of `make_expression` that makes `lhs` optional and assumes [`Op::Add`].
     ///
     /// This is useful when using [`Iterator::fold`] to build an arbitrary-length sum.
-    fn make_sum_expression(&mut self, lhs: Option<BcbCounter>, rhs: BcbCounter) -> BcbCounter {
+    pub(super) fn make_sum_expression(
+        &mut self,
+        lhs: Option<BcbCounter>,
+        rhs: BcbCounter,
+    ) -> BcbCounter {
         let Some(lhs) = lhs else { return rhs };
         self.make_expression(lhs, Op::Add, rhs)
     }
@@ -162,6 +181,20 @@ impl CoverageCounters {
             // This BCB is associated with a counter or nothing, so skip it.
             Some(BcbCounter::Counter { .. }) | None => None,
         })
+    }
+
+    pub(super) fn bind_combined_coverage_expressions_to_bcb(
+        &mut self,
+        bcb: BasicCoverageBlock,
+        expr: ExpressionId,
+    ) {
+        self.combined_bcb_expressions.entry(bcb).or_default().push(expr);
+    }
+
+    pub(super) fn bcb_nodes_with_combined_coverage_expressions(
+        &self,
+    ) -> impl Iterator<Item = (BasicCoverageBlock, &[ExpressionId])> + Captures<'_> {
+        self.combined_bcb_expressions.iter().map(|(bcb, exprs)| (*bcb, exprs.as_slice()))
     }
 
     pub(super) fn into_expressions(self) -> IndexVec<ExpressionId, Expression> {

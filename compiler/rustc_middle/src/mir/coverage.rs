@@ -326,8 +326,10 @@ pub struct MCDCBranchSpan {
     /// If `None`, this actually represents a normal branch span inserted for
     /// code that was too complex for MC/DC.
     pub condition_info: Option<ConditionInfo>,
-    pub true_marker: BlockMarkerId,
-    pub false_marker: BlockMarkerId,
+    /// Markers inserted into blocks where the condition is tested.
+    pub test_markers: Vec<BlockMarkerId>,
+    /// Markers inserted into blocks which would be executed if the condition is true.
+    pub true_markers: Vec<BlockMarkerId>,
     pub decision_depth: u16,
 }
 

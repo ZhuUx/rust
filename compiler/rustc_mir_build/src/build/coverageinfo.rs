@@ -162,6 +162,7 @@ impl<'tcx> Builder<'_, 'tcx> {
     pub(crate) fn visit_coverage_branch_condition(
         &mut self,
         mut expr_id: ExprId,
+        test_block: BasicBlock,
         mut then_block: BasicBlock,
         mut else_block: BasicBlock,
     ) {
@@ -181,12 +182,12 @@ impl<'tcx> Builder<'_, 'tcx> {
 
         // Separate path for handling branches when MC/DC is enabled.
         if let Some(mcdc_info) = branch_info.mcdc_info.as_mut() {
-            let inject_block_marker = |source_info, block| {
-                branch_info.markers.inject_block_marker(&mut self.cfg, source_info, block)
-            };
+            let inject_block_marker =
+                |block| branch_info.markers.inject_block_marker(&mut self.cfg, source_info, block);
             mcdc_info.visit_evaluated_condition(
                 self.tcx,
-                source_info,
+                source_info.span,
+                test_block,
                 then_block,
                 else_block,
                 inject_block_marker,
