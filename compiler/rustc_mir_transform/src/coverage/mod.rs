@@ -7,6 +7,7 @@ mod spans;
 #[cfg(test)]
 mod tests;
 
+use rustc_data_structures::graph::Successors;
 use rustc_middle::mir::coverage::{
     CodeRegion, CoverageKind, DecisionInfo, FunctionCoverageInfo, Mapping, MappingKind,
 };
@@ -19,7 +20,7 @@ use rustc_span::def_id::LocalDefId;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, Pos, RelativeBytePos, Span, Symbol};
 
-use crate::coverage::counters::{CounterIncrementSite, CoverageCounters};
+use crate::coverage::counters::{BcbCounter, CounterIncrementSite, CoverageCounters};
 use crate::coverage::graph::{BasicCoverageBlock, CoverageGraph};
 use crate::coverage::mappings::{ExtractedMappings, MCDCBranchBlocks};
 use crate::MirPass;
@@ -67,7 +68,7 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
     let _span = debug_span!("instrument_function_for_coverage", ?def_id).entered();
 
     let hir_info = extract_hir_info(tcx, def_id.expect_local());
-    let basic_coverage_blocks = CoverageGraph::from_mir(mir_body);
+    let mut basic_coverage_blocks = CoverageGraph::from_mir(mir_body);
 
     ////////////////////////////////////////////////////
     // Extract coverage spans and other mapping info from MIR.
@@ -90,19 +91,26 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
     let mut coverage_counters =
         CoverageCounters::make_bcb_counters(&basic_coverage_blocks, bcb_has_counter_mappings);
 
-    let mappings = create_mappings(tcx, &hir_info, &extracted_mappings, &mut coverage_counters);
+    inject_coverage_statements(
+        mir_body,
+        &mut basic_coverage_blocks,
+        bcb_has_counter_mappings,
+        &mut coverage_counters,
+    );
+
+    let mappings = create_mappings(
+        mir_body,
+        tcx,
+        &hir_info,
+        &extracted_mappings,
+        &basic_coverage_blocks,
+        &mut coverage_counters,
+    );
     if mappings.is_empty() {
         // No spans could be converted into valid mappings, so skip this function.
         debug!("no spans could be converted into valid mappings; skipping");
         return;
     }
-
-    inject_coverage_statements(
-        mir_body,
-        &basic_coverage_blocks,
-        bcb_has_counter_mappings,
-        &coverage_counters,
-    );
 
     inject_mcdc_statements(mir_body, &basic_coverage_blocks, &extracted_mappings);
 
@@ -129,9 +137,11 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
 /// Precondition: All BCBs corresponding to those spans have been given
 /// coverage counters.
 fn create_mappings<'tcx>(
+    mir_body: &mut mir::Body<'tcx>,
     tcx: TyCtxt<'tcx>,
     hir_info: &ExtractedHirInfo,
     extracted_mappings: &ExtractedMappings,
+    basic_coverage_blocks: &CoverageGraph,
     coverage_counters: &mut CoverageCounters,
 ) -> Vec<Mapping> {
     let source_map = tcx.sess.source_map();
@@ -205,8 +215,36 @@ fn create_mappings<'tcx>(
                         counter_for_bcbs_group(&[*true_bcb]),
                         counter_for_bcbs_group(&[*false_bcb]),
                     ),
-                    MCDCBranchBlocks::PatternMatching(_, _) => {
-                        unreachable!("not supported yet");
+                    MCDCBranchBlocks::PatternMatching(test_bcbs, matched_bcbs) => {
+                        let matched_counter = counter_for_bcbs_group(&matched_bcbs);
+                        let unmatched_bcbs = test_bcbs
+                            .iter()
+                            .zip(matched_bcbs.iter())
+                            .map(|(&test_bcb, &matched_bcb)| {
+                                basic_coverage_blocks
+                                    .successors(test_bcb)
+                                    .filter_map(move |suc| (suc != matched_bcb).then_some(suc))
+                            })
+                            .flatten()
+                            .collect::<Vec<_>>();
+                        let unmatched_counter = counter_for_bcbs_group(&unmatched_bcbs);
+
+                        let mut mark_counter_used =
+                            |counter: BcbCounter, bcbs: &[BasicCoverageBlock]| {
+                                let BcbCounter::Expression { id } = counter else { return };
+                                if bcbs.len() > 1 {
+                                    for &bcb in bcbs {
+                                        inject_statement(
+                                            mir_body,
+                                            CoverageKind::ExpressionUsed { id },
+                                            basic_coverage_blocks[bcb].leader_bb(),
+                                        );
+                                    }
+                                }
+                            };
+                        mark_counter_used(matched_counter, &matched_bcbs);
+                        mark_counter_used(unmatched_counter, &unmatched_bcbs);
+                        (matched_counter, unmatched_counter)
                     }
                 };
                 let true_term = true_counter.as_term();
@@ -251,10 +289,11 @@ fn create_mappings<'tcx>(
 /// inject any necessary coverage statements into MIR.
 fn inject_coverage_statements<'tcx>(
     mir_body: &mut mir::Body<'tcx>,
-    basic_coverage_blocks: &CoverageGraph,
+    basic_coverage_blocks: &mut CoverageGraph,
     bcb_has_coverage_spans: impl Fn(BasicCoverageBlock) -> bool,
-    coverage_counters: &CoverageCounters,
+    coverage_counters: &mut CoverageCounters,
 ) {
+    let mut edge_bcb_counters = vec![];
     // Inject counter-increment statements into MIR.
     for (id, counter_increment_site) in coverage_counters.counter_increment_sites() {
         // Determine the block to inject a counter-increment statement into.
@@ -269,6 +308,9 @@ fn inject_coverage_statements<'tcx>(
                 let to_bb = basic_coverage_blocks[to_bcb].leader_bb();
 
                 let new_bb = inject_edge_counter_basic_block(mir_body, from_bb, to_bb);
+                // This new BCB might be used by mcdc later.
+                let new_bcb = basic_coverage_blocks.insert_bcb_in_edge(from_bcb, to_bcb, new_bb);
+                edge_bcb_counters.push((new_bcb, id));
                 debug!(
                     "Edge {from_bcb:?} (last {from_bb:?}) -> {to_bcb:?} (leader {to_bb:?}) \
                     requires a new MIR BasicBlock {new_bb:?} for counter increment {id:?}",
@@ -283,7 +325,6 @@ fn inject_coverage_statements<'tcx>(
     // For each counter expression that is directly associated with at least one
     // span, we inject an "expression-used" statement, so that coverage codegen
     // can check whether the injected statement survived MIR optimization.
-    // (BCB edges can't have spans, so we only need to process BCB nodes here.)
     //
     // See the code in `rustc_codegen_llvm::coverageinfo::map_data` that deals
     // with "expressions seen" and "zero terms".
@@ -297,6 +338,10 @@ fn inject_coverage_statements<'tcx>(
             basic_coverage_blocks[bcb].leader_bb(),
         );
     }
+
+    edge_bcb_counters.into_iter().for_each(|(bcb, id)| {
+        coverage_counters.append_bcb_with_counter(bcb, BcbCounter::Counter { id })
+    });
 }
 
 /// For each conditions inject statements to update condition bitmap after it has been evaluated.

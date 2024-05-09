@@ -209,6 +209,13 @@ impl CoverageCounters {
         }
     }
 
+    pub(super) fn append_bcb_with_counter(&mut self, bcb: BasicCoverageBlock, counter: BcbCounter) {
+        while !self.bcb_counters.last_index().is_some_and(|last_bcb| last_bcb >= bcb) {
+            self.bcb_counters.push(None);
+        }
+        self.set_bcb_counter(bcb, counter);
+    }
+
     pub(super) fn bcb_counter(&self, bcb: BasicCoverageBlock) -> Option<BcbCounter> {
         self.bcb_counters[bcb]
     }
