@@ -1902,6 +1902,28 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
         // Extract the match-pair from the highest priority candidate and build a test from it.
         let (match_place, test) = self.pick_test(candidates);
 
+        // Patterns like `Some(A) | Some(B)` need spans for their target branches separately.
+        // Keep it in original order so that true arms of the laters won't be counted as false arms of the formers.
+        let mut mcdc_coverage_targets: Option<Vec<_>> =
+            self.tcx.sess.instrument_coverage_mcdc().then(|| {
+                candidates
+                    .iter()
+                    .filter_map(|candidate| {
+                        candidate.match_pairs.first().map(|matched_pair| {
+                            (candidate.extra_data.span, (matched_pair.pattern.span, None))
+                        })
+                    })
+                    .collect()
+            });
+
+        let mut add_mcdc_coverage_matched_blk = |pattern_span: Span, blk: BasicBlock| {
+            let Some(targets) = mcdc_coverage_targets.as_mut() else { return };
+            *targets
+                .iter_mut()
+                .find_map(|(span, (_, blk_opt))| (*span == pattern_span).then_some(blk_opt))
+                .expect("target_candidates only are part of candidates") = Some(blk);
+        };
+
         // For each of the N possible test outcomes, build the vector of candidates that applies if
         // the test has that particular outcome.
         let (remaining_candidates, target_candidates) =
@@ -1928,6 +1950,10 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             .into_iter()
             .map(|(branch, mut candidates)| {
                 let candidate_start = self.cfg.start_new_block();
+                add_mcdc_coverage_matched_blk(
+                    candidates.first().expect("candidates must be not empty").extra_data.span,
+                    candidate_start,
+                );
                 self.match_candidates(
                     span,
                     scrutinee_span,
@@ -1938,6 +1964,15 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 (branch, candidate_start)
             })
             .collect();
+
+        if let Some(coverage_targets) = mcdc_coverage_targets.take() {
+            self.visit_mcdc_pattern_matching_conditions(
+                start_block,
+                coverage_targets.into_iter().filter_map(|(_, (span, matched_target_block))| {
+                    matched_target_block.map(|blk| (span, blk))
+                }),
+            );
+        }
 
         // Perform the test, branching to one of N blocks.
         self.perform_test(
@@ -1968,6 +2003,9 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
         declare_bindings: bool,
     ) -> BlockAnd<()> {
         let expr_span = self.thir[expr_id].span;
+
+        self.mcdc_prepare_pattern_matching_decision(expr_span);
+
         let expr_place_builder = unpack!(block = self.lower_scrutinee(block, expr_id, expr_span));
         let wildcard = Pat::wildcard_from_ty(pat.ty);
         let mut guard_candidate = Candidate::new(expr_place_builder.clone(), pat, false, self);
@@ -1999,8 +2037,14 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             false,
         );
 
+        self.mcdc_finish_pattern_matching_decision(post_guard_block, otherwise_post_guard_block);
         // If branch coverage is enabled, record this branch.
-        self.visit_coverage_conditional_let(pat, post_guard_block, otherwise_post_guard_block);
+        self.visit_coverage_conditional_let(
+            pat,
+            block,
+            post_guard_block,
+            otherwise_post_guard_block,
+        );
 
         post_guard_block.unit()
     }
@@ -2464,6 +2508,8 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
     ) -> BlockAnd<BasicBlock> {
         let else_block_span = self.thir[else_block].span;
         let (matching, failure) = self.in_if_then_scope(*let_else_scope, else_block_span, |this| {
+            this.mcdc_prepare_pattern_matching_decision(pattern.span);
+
             let scrutinee = unpack!(block = this.lower_scrutinee(block, init_id, initializer_span));
             let pat = Pat { ty: pattern.ty, span: else_block_span, kind: PatKind::Wild };
             let mut wildcard = Candidate::new(scrutinee.clone(), &pat, false, this);
@@ -2495,8 +2541,9 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 true,
             );
 
+            this.mcdc_finish_pattern_matching_decision(matching, failure);
             // If branch coverage is enabled, record this branch.
-            this.visit_coverage_conditional_let(pattern, matching, failure);
+            this.visit_coverage_conditional_let(pattern, block, matching, failure);
 
             this.break_for_else(failure, this.source_info(initializer_span));
             matching.unit()
