@@ -310,6 +310,8 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
 
         let match_start_span = span.shrink_to_lo().to(scrutinee_span);
 
+        self.mcdc_prepare_pattern_matching_decision(match_start_span);
+
         let fake_borrow_temps = self.lower_match_tree(
             block,
             scrutinee_span,
@@ -318,6 +320,8 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             match_has_guard,
             &mut candidates,
         );
+
+        self.mcdc_finish_pattern_matching_decision(block, None);
 
         self.lower_match_arms(
             destination,
@@ -470,7 +474,6 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             .into_iter()
             .map(|(arm, candidate)| {
                 debug!("lowering arm {:?}\ncandidate = {:?}", arm, candidate);
-
                 let arm_source_info = self.source_info(arm.span);
                 let arm_scope = (arm.scope, arm_source_info);
                 let match_scope = self.local_scope();
@@ -2037,7 +2040,10 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             false,
         );
 
-        self.mcdc_finish_pattern_matching_decision(post_guard_block, otherwise_post_guard_block);
+        self.mcdc_finish_pattern_matching_decision(
+            block,
+            Some((post_guard_block, otherwise_post_guard_block)),
+        );
         // If branch coverage is enabled, record this branch.
         self.visit_coverage_conditional_let(
             pat,
@@ -2541,7 +2547,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
                 true,
             );
 
-            this.mcdc_finish_pattern_matching_decision(matching, failure);
+            this.mcdc_finish_pattern_matching_decision(block, Some((matching, failure)));
             // If branch coverage is enabled, record this branch.
             this.visit_coverage_conditional_let(pattern, block, matching, failure);
 

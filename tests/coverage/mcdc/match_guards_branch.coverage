@@ -1,0 +1,140 @@
+   LL|       |#![feature(coverage_attribute)]
+   LL|       |//@ edition: 2021
+   LL|       |//@ min-llvm-version: 18
+   LL|       |//@ compile-flags: -Zcoverage-options=mcdc
+   LL|       |//@ llvm-cov-flags: --show-branches=count
+   LL|       |
+   LL|       |#[derive(Clone, Copy)]
+   LL|       |enum Pat {
+   LL|       |    A(Option<i32>),
+   LL|       |    B(i32),
+   LL|       |    C(i32),
+   LL|       |}
+   LL|       |
+   LL|      2|fn single_nested_pattern(pat: Pat) {
+   LL|      1|    match pat {
+   LL|      1|        Pat::A(Some(_)) => say("matched A::Some"),
+  ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  |  Branch (LL:16): [True: 1, False: 0]
+  ------------------
+   LL|      0|        Pat::A(None) => say("matched A::None"),
+  ------------------
+  |  Branch (LL:16): [True: 0, False: 1]
+  ------------------
+   LL|      1|        Pat::B(_) => say("matched B"),
+  ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  ------------------
+   LL|      0|        Pat::C(_) => say("matched C"),
+  ------------------
+  |  Branch (LL:9): [True: 0, False: 2]
+  ------------------
+   LL|       |    }
+   LL|      2|}
+   LL|       |
+   LL|      2|fn simple_or_pattern(pat: Pat) {
+   LL|      2|    match pat {
+   LL|      1|        Pat::B(_) | Pat::C(_) => say("matched B or C"),
+  ------------------
+  |  Branch (LL:9): [True: 0, False: 2]
+  |  Branch (LL:21): [True: 1, False: 1]
+  ------------------
+   LL|      1|        _ => say("matched A"),
+   LL|       |    }
+   LL|      2|}
+   LL|       |
+   LL|      3|fn simple_joint_pattern(pat: (Pat, Pat)) {
+   LL|      1|    match pat {
+   LL|      1|        (Pat::A(Some(_)), Pat::B(_)) => say("matched A::Some + B"),
+  ------------------
+  |  Branch (LL:10): [True: 2, False: 1]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:27): [True: 1, False: 1]
+  ------------------
+   LL|      0|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 2]
+  |  Branch (LL:21): [True: 0, False: 1]
+  ------------------
+   LL|      2|        _ => say("matched others"),
+   LL|       |    }
+   LL|      3|}
+   LL|       |
+   LL|      4|fn joint_pattern_with_or(pat: (Pat, Pat)) {
+   LL|      1|    match pat {
+   LL|      2|        (Pat::A(Some(_)) | Pat::C(_), Pat::B(_)) => say("matched A::Some | C + B"),
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 2]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 2]
+  |  Branch (LL:39): [True: 3, False: 1]
+  ------------------
+   LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+  ------------------
+  |  Branch (LL:10): [True: 2, False: 3]
+  ------------------
+   LL|      1|        _ => say("matched others"),
+   LL|       |    }
+   LL|      4|}
+   LL|       |
+   LL|      4|fn joint_or_patterns(pat: (Pat, Pat)) {
+   LL|      2|    match pat {
+   LL|      2|        (Pat::A(Some(_)) | Pat::C(_), Pat::B(_) | Pat::C(_)) => say("matched A::Some | C + B | C"),
+                       ^1
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 3]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 3]
+  |  Branch (LL:39): [True: 2, False: 0]
+  |  Branch (LL:51): [True: 0, False: 2]
+  ------------------
+   LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+   LL|      1|        _ => say("matched others"),
+   LL|       |    }
+   LL|       |
+   LL|       |    // Try to use the matched value
+   LL|      2|    match pat {
+   LL|      1|        (Pat::A(Some(a)) | Pat::C(a), Pat::B(b) | Pat::C(b)) => {
+                                                                       ^0
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 3]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 3]
+  |  Branch (LL:39): [True: 2, False: 0]
+  |  Branch (LL:51): [True: 0, False: 2]
+  ------------------
+   LL|      2|            say(&format!("matched A::Some | C ({a}) + B | C ({b})"))
+   LL|       |        }
+   LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+   LL|      1|        _ => say("matched others"),
+   LL|       |    }
+   LL|      4|}
+   LL|       |
+   LL|      1|fn main() {
+   LL|      1|    single_nested_pattern(Pat::A(Some(5)));
+   LL|      1|    single_nested_pattern(Pat::B(5));
+   LL|      1|
+   LL|      1|    simple_or_pattern(Pat::A(None));
+   LL|      1|    simple_or_pattern(Pat::C(3));
+   LL|      1|
+   LL|      1|    simple_joint_pattern((Pat::A(Some(1)), Pat::B(2)));
+   LL|      1|    simple_joint_pattern((Pat::A(Some(1)), Pat::C(2)));
+   LL|      1|    simple_joint_pattern((Pat::B(1), Pat::B(2)));
+   LL|      1|
+   LL|      1|    joint_pattern_with_or((Pat::A(Some(1)), Pat::B(2)));
+   LL|      1|    joint_pattern_with_or((Pat::B(1), Pat::C(2)));
+   LL|      1|    joint_pattern_with_or((Pat::B(1), Pat::B(2)));
+   LL|      1|    joint_pattern_with_or((Pat::C(1), Pat::B(2)));
+   LL|      1|
+   LL|      1|    joint_or_patterns((Pat::A(Some(1)), Pat::B(2)));
+   LL|      1|    joint_or_patterns((Pat::B(1), Pat::C(2)));
+   LL|      1|    joint_or_patterns((Pat::B(1), Pat::B(2)));
+   LL|      1|    joint_or_patterns((Pat::C(1), Pat::B(2)));
+   LL|      1|}
+   LL|       |
+   LL|       |#[coverage(off)]
+   LL|       |fn say(message: &str) {
+   LL|       |    core::hint::black_box(message);
+   LL|       |}
+

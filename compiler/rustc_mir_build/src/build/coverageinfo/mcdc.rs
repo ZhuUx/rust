@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 
 use rustc_middle::mir::coverage::{
     BlockMarkerId, ConditionId, ConditionInfo, MCDCBranchSpan, MCDCDecisionSpan,
@@ -198,7 +198,6 @@ impl PatternDecisionCtx {
         let entry_span = targets.first().expect("targets mut be non empty").0;
 
         let mut false_next_arm = None;
-
         // Tranverse conditions in reverse order.
         while let Some((span, matched_block)) = targets.pop() {
             // LLVM whether the decision dominates the condition by checking if span of the decision cover that of the condition,
@@ -246,16 +245,22 @@ impl PatternDecisionCtx {
     // to the unique test block of  `IpAddr::V4(_) | IpAddr::V6(_)`. Thus the test block cannot find its direct
     // predecessors, which are not matched blocks of any patterns, at `visit_matching_arms`
     // (in fact they were not connected at that moment).
-    fn link_condition_gaps(&mut self, cfg: &mut CFG<'_>) {
+    fn link_condition_gaps(&mut self, entry_block: BasicBlock, cfg: &mut CFG<'_>) {
         if self.start_tests.len() < 2 {
             return;
         }
-        let mut linked_starts = BTreeSet::new();
+
         for (&end, span) in &self.end_tests {
             let mut successor = Some(end);
             while let Some(block) = successor.take() {
-                let next_blocks =
-                    cfg.block_data(block).terminator().successors().collect::<Vec<_>>();
+                let Some(next_blocks) = cfg
+                    .block_data(block)
+                    .terminator
+                    .as_ref()
+                    .map(|term| term.successors().collect::<Vec<_>>())
+                else {
+                    break;
+                };
                 match next_blocks.as_slice() {
                     &[unique_successor] => {
                         if let Some(&next_span) = self.start_tests.get(&unique_successor) {
@@ -264,7 +269,6 @@ impl PatternDecisionCtx {
                                 .get_mut(span)
                                 .expect("end tests must be recorded");
                             end_record.true_next_pattern = Some(next_span);
-                            linked_starts.insert(unique_successor);
                         } else {
                             successor = Some(unique_successor);
                         }
@@ -274,32 +278,35 @@ impl PatternDecisionCtx {
             }
         }
 
-        self.start_tests.retain(|block, _| !linked_starts.contains(block));
-
+        // There might be unreached arms in match guard. E.g
+        // ```rust
+        // match pattern {
+        //     (A | B, C | D) => {},
+        //     (B, D) => {},
+        //     _ => {}
+        // }
+        // ```
+        // Clearly the arm `(B, D)` is covered by the first arm so it should be ureached.
+        // Such arms can cause unresolved start tests here, just ignore them.
+        self.start_tests.retain(|block, _| *block == entry_block);
+        // In case no block in `start_tests` is `entry_block`.
         assert_eq!(self.start_tests.len(), 1, "still some gaps exist in mcdc pattern decision");
     }
 
     fn finish(
         mut self,
         cfg: &mut CFG<'_>,
-        matching_block: BasicBlock,
-        failure_block: BasicBlock,
+        entry_block: BasicBlock,
+        end_blocks: Option<(BasicBlock, BasicBlock)>,
         mut inject_block_marker: impl FnMut(&mut CFG<'_>, Span, BasicBlock) -> BlockMarkerId,
-    ) -> (MCDCDecisionSpan, Vec<MCDCBranchSpan>) {
-        self.link_condition_gaps(cfg);
+    ) -> (Option<MCDCDecisionSpan>, Vec<MCDCBranchSpan>) {
+        self.link_condition_gaps(entry_block, cfg);
 
         let Self { decision_span, decision_depth, mut matching_arms, start_tests, end_tests: _ } =
             self;
 
         let mut into_block_markers = |span: Span, blocks: &[BasicBlock]| {
             blocks.into_iter().map(|&block| inject_block_marker(cfg, span, block)).collect()
-        };
-
-        let decision = MCDCDecisionSpan {
-            span: decision_span,
-            decision_depth,
-            conditions_num: matching_arms.len(),
-            end_markers: into_block_markers(decision_span, &[matching_block, failure_block]),
         };
 
         let mut branch_spans = vec![];
@@ -357,7 +364,7 @@ impl PatternDecisionCtx {
                 true_markers: into_block_markers(span, &matched_blocks),
             });
         }
-        assert_eq!(branch_spans.len(), decision.conditions_num, "conditions num is not correct");
+
         branch_spans.sort_by(|lhs, rhs| {
             if lhs.span.contains(rhs.span) {
                 std::cmp::Ordering::Less
@@ -380,6 +387,15 @@ impl PatternDecisionCtx {
             }
             branch_spans[idx].span = span;
         }
+
+        // No `end_blocks` means it's irrefutable pattern matching. In such cases do not generate mcdc info because the decision
+        // never fails. Instead we generate normal branch coverage for it.
+        let decision = end_blocks.map(|(matching, failure)| MCDCDecisionSpan {
+            span: decision_span,
+            decision_depth,
+            conditions_num: branch_spans.len(),
+            end_markers: into_block_markers(decision_span, &[matching, failure]),
+        });
 
         (decision, branch_spans)
     }
@@ -481,8 +497,8 @@ impl MCDCInfoBuilder {
         &mut self,
         cfg: &mut CFG<'_>,
         tcx: TyCtxt<'_>,
-        matching_block: BasicBlock,
-        failure_block: BasicBlock,
+        entry_block: BasicBlock,
+        end_blocks: Option<(BasicBlock, BasicBlock)>,
         inject_block_marker: impl FnMut(&mut CFG<'_>, Span, BasicBlock) -> BlockMarkerId,
     ) {
         if !self
@@ -497,15 +513,24 @@ impl MCDCInfoBuilder {
         };
 
         let (decision, conditions) =
-            decision_ctx.finish(cfg, matching_block, failure_block, inject_block_marker);
-        self.append_mcdc_info(tcx, decision, conditions);
+            decision_ctx.finish(cfg, entry_block, end_blocks, inject_block_marker);
+        if let Some(decision) = decision {
+            self.append_mcdc_info(tcx, decision, conditions);
+        } else {
+            self.append_normal_branches(conditions);
+        }
+    }
+
+    fn append_normal_branches(&mut self, mut conditions: Vec<MCDCBranchSpan>) {
+        conditions.iter_mut().for_each(|branch| branch.condition_info = None);
+        self.branch_spans.extend(conditions);
     }
 
     fn append_mcdc_info(
         &mut self,
         tcx: TyCtxt<'_>,
         decision: MCDCDecisionSpan,
-        mut conditions: Vec<MCDCBranchSpan>,
+        conditions: Vec<MCDCBranchSpan>,
     ) {
         // take_condition() returns Some for decision_result when the decision stack
         // is empty, i.e. when all the conditions of the decision were instrumented,
@@ -521,9 +546,7 @@ impl MCDCInfoBuilder {
             // MCDC is equivalent to normal branch coverage if number of conditions is less than 1, so ignore these decisions.
             // See comment of `MAX_CONDITIONS_NUM_IN_DECISION` for why decisions with oversized conditions are ignored.
             _ => {
-                // Generate normal branch coverage mappings in such cases.
-                conditions.iter_mut().for_each(|branch| branch.condition_info = None);
-                self.branch_spans.extend(conditions);
+                self.append_normal_branches(conditions);
                 if decision.conditions_num > MAX_CONDITIONS_NUM_IN_DECISION {
                     tcx.dcx().emit_warn(MCDCExceedsConditionNumLimit {
                         span: decision.span,
@@ -590,8 +613,8 @@ impl Builder<'_, '_> {
 
     pub(crate) fn mcdc_finish_pattern_matching_decision(
         &mut self,
-        matching_block: BasicBlock,
-        failure_block: BasicBlock,
+        entry_block: BasicBlock,
+        end_blocks: Option<(BasicBlock, BasicBlock)>,
     ) {
         if let Some(branch_info) = self.coverage_branch_info.as_mut()
             && let Some(mcdc_info) = branch_info.mcdc_info.as_mut()
@@ -606,8 +629,8 @@ impl Builder<'_, '_> {
             mcdc_info.finish_pattern_decision(
                 &mut self.cfg,
                 self.tcx,
-                matching_block,
-                failure_block,
+                entry_block,
+                end_blocks,
                 inject_block_marker,
             );
         }
