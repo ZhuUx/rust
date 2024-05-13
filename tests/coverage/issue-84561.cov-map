@@ -1,17 +1,15 @@
 Function name: <issue_84561::Foo as core::fmt::Debug>::fmt
-Raw bytes (29): 0x[01, 01, 02, 01, 05, 05, 02, 04, 01, 8a, 01, 05, 01, 25, 05, 01, 25, 00, 26, 02, 01, 09, 00, 0f, 07, 01, 05, 00, 06]
+Raw bytes (27): 0x[01, 01, 01, 01, 05, 04, 01, 8a, 01, 05, 01, 25, 05, 01, 25, 00, 26, 02, 01, 09, 00, 0f, 01, 01, 05, 00, 06]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 2
+Number of expressions: 1
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 1 operands: lhs = Counter(1), rhs = Expression(0, Sub)
 Number of file 0 mappings: 4
 - Code(Counter(0)) at (prev + 138, 5) to (start + 1, 37)
 - Code(Counter(1)) at (prev + 1, 37) to (start + 0, 38)
 - Code(Expression(0, Sub)) at (prev + 1, 9) to (start + 0, 15)
     = (c0 - c1)
-- Code(Expression(1, Add)) at (prev + 1, 5) to (start + 0, 6)
-    = (c1 + (c0 - c1))
+- Code(Counter(0)) at (prev + 1, 5) to (start + 0, 6)
 
 Function name: issue_84561::main
 Raw bytes (10): 0x[01, 01, 00, 01, 01, b4, 01, 01, 04, 02]
@@ -22,51 +20,30 @@ Number of file 0 mappings: 1
 - Code(Counter(0)) at (prev + 180, 1) to (start + 4, 2)
 
 Function name: issue_84561::test1
-Raw bytes (78): 0x[01, 01, 0e, 05, 06, 01, 05, 09, 36, 03, 09, 0d, 2e, 33, 0d, 09, 36, 03, 09, 11, 26, 2b, 11, 0d, 2e, 33, 0d, 09, 36, 03, 09, 09, 01, 9a, 01, 01, 01, 0b, 05, 01, 0c, 00, 1e, 03, 01, 05, 00, 0b, 09, 00, 0c, 00, 1e, 33, 01, 0d, 01, 0b, 0d, 01, 0c, 00, 1e, 2b, 01, 05, 03, 0b, 11, 03, 0c, 00, 1e, 23, 01, 01, 00, 02]
+Raw bytes (50): 0x[01, 01, 00, 09, 01, 9a, 01, 01, 01, 0b, 05, 01, 0c, 00, 1e, 01, 01, 05, 00, 0b, 09, 00, 0c, 00, 1e, 01, 01, 0d, 01, 0b, 0d, 01, 0c, 00, 1e, 01, 01, 05, 03, 0b, 11, 03, 0c, 00, 1e, 01, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 14
-- expression 0 operands: lhs = Counter(1), rhs = Expression(1, Sub)
-- expression 1 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 2 operands: lhs = Counter(2), rhs = Expression(13, Sub)
-- expression 3 operands: lhs = Expression(0, Add), rhs = Counter(2)
-- expression 4 operands: lhs = Counter(3), rhs = Expression(11, Sub)
-- expression 5 operands: lhs = Expression(12, Add), rhs = Counter(3)
-- expression 6 operands: lhs = Counter(2), rhs = Expression(13, Sub)
-- expression 7 operands: lhs = Expression(0, Add), rhs = Counter(2)
-- expression 8 operands: lhs = Counter(4), rhs = Expression(9, Sub)
-- expression 9 operands: lhs = Expression(10, Add), rhs = Counter(4)
-- expression 10 operands: lhs = Counter(3), rhs = Expression(11, Sub)
-- expression 11 operands: lhs = Expression(12, Add), rhs = Counter(3)
-- expression 12 operands: lhs = Counter(2), rhs = Expression(13, Sub)
-- expression 13 operands: lhs = Expression(0, Add), rhs = Counter(2)
+Number of expressions: 0
 Number of file 0 mappings: 9
 - Code(Counter(0)) at (prev + 154, 1) to (start + 1, 11)
 - Code(Counter(1)) at (prev + 1, 12) to (start + 0, 30)
-- Code(Expression(0, Add)) at (prev + 1, 5) to (start + 0, 11)
-    = (c1 + (c0 - c1))
+- Code(Counter(0)) at (prev + 1, 5) to (start + 0, 11)
 - Code(Counter(2)) at (prev + 0, 12) to (start + 0, 30)
-- Code(Expression(12, Add)) at (prev + 1, 13) to (start + 1, 11)
-    = (c2 + ((c1 + (c0 - c1)) - c2))
+- Code(Counter(0)) at (prev + 1, 13) to (start + 1, 11)
 - Code(Counter(3)) at (prev + 1, 12) to (start + 0, 30)
-- Code(Expression(10, Add)) at (prev + 1, 5) to (start + 3, 11)
-    = (c3 + ((c2 + ((c1 + (c0 - c1)) - c2)) - c3))
+- Code(Counter(0)) at (prev + 1, 5) to (start + 3, 11)
 - Code(Counter(4)) at (prev + 3, 12) to (start + 0, 30)
-- Code(Expression(8, Add)) at (prev + 1, 1) to (start + 0, 2)
-    = (c4 + ((c3 + ((c2 + ((c1 + (c0 - c1)) - c2)) - c3)) - c4))
+- Code(Counter(0)) at (prev + 1, 1) to (start + 0, 2)
 
 Function name: issue_84561::test2
-Raw bytes (24): 0x[01, 01, 02, 05, 06, 01, 05, 03, 01, b0, 01, 01, 01, 10, 05, 01, 11, 00, 23, 03, 01, 01, 00, 02]
+Raw bytes (20): 0x[01, 01, 00, 03, 01, b0, 01, 01, 01, 10, 05, 01, 11, 00, 23, 01, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 2
-- expression 0 operands: lhs = Counter(1), rhs = Expression(1, Sub)
-- expression 1 operands: lhs = Counter(0), rhs = Counter(1)
+Number of expressions: 0
 Number of file 0 mappings: 3
 - Code(Counter(0)) at (prev + 176, 1) to (start + 1, 16)
 - Code(Counter(1)) at (prev + 1, 17) to (start + 0, 35)
-- Code(Expression(0, Add)) at (prev + 1, 1) to (start + 0, 2)
-    = (c1 + (c0 - c1))
+- Code(Counter(0)) at (prev + 1, 1) to (start + 0, 2)
 
 Function name: issue_84561::test2::call_print
 Raw bytes (10): 0x[01, 01, 00, 01, 01, a7, 01, 09, 02, 0a]

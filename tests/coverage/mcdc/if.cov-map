@@ -1,15 +1,13 @@
 Function name: if::mcdc_check_a
-Raw bytes (70): 0x[01, 01, 07, 01, 05, 05, 0d, 09, 1a, 01, 05, 0d, 17, 09, 1a, 01, 05, 08, 01, 0f, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 17, 02, 0c, 02, 06, 13, 03, 01, 00, 02]
+Raw bytes (66): 0x[01, 01, 05, 01, 05, 05, 0d, 09, 02, 0d, 13, 09, 02, 08, 01, 0f, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 13, 02, 0c, 02, 06, 0f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 7
+Number of expressions: 5
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(1), rhs = Counter(3)
-- expression 2 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Counter(3), rhs = Expression(5, Add)
-- expression 5 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 2 operands: lhs = Counter(2), rhs = Expression(0, Sub)
+- expression 3 operands: lhs = Counter(3), rhs = Expression(4, Add)
+- expression 4 operands: lhs = Counter(2), rhs = Expression(0, Sub)
 Number of file 0 mappings: 8
 - Code(Counter(0)) at (prev + 15, 1) to (start + 1, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 8) to (start + 0, 14)
@@ -21,23 +19,21 @@ Number of file 0 mappings: 8
     true  = c3
     false = (c1 - c3)
 - Code(Counter(3)) at (prev + 0, 15) to (start + 2, 6)
-- Code(Expression(5, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(4, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c2 + (c0 - c1))
-- Code(Expression(4, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(3, Add)) at (prev + 3, 1) to (start + 0, 2)
     = (c3 + (c2 + (c0 - c1)))
 
 Function name: if::mcdc_check_b
-Raw bytes (70): 0x[01, 01, 07, 01, 05, 05, 0d, 09, 1a, 01, 05, 0d, 17, 09, 1a, 01, 05, 08, 01, 17, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 17, 02, 0c, 02, 06, 13, 03, 01, 00, 02]
+Raw bytes (66): 0x[01, 01, 05, 01, 05, 05, 0d, 09, 02, 0d, 13, 09, 02, 08, 01, 17, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 13, 02, 0c, 02, 06, 0f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 7
+Number of expressions: 5
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(1), rhs = Counter(3)
-- expression 2 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Counter(3), rhs = Expression(5, Add)
-- expression 5 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 2 operands: lhs = Counter(2), rhs = Expression(0, Sub)
+- expression 3 operands: lhs = Counter(3), rhs = Expression(4, Add)
+- expression 4 operands: lhs = Counter(2), rhs = Expression(0, Sub)
 Number of file 0 mappings: 8
 - Code(Counter(0)) at (prev + 23, 1) to (start + 1, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 8) to (start + 0, 14)
@@ -49,23 +45,21 @@ Number of file 0 mappings: 8
     true  = c3
     false = (c1 - c3)
 - Code(Counter(3)) at (prev + 0, 15) to (start + 2, 6)
-- Code(Expression(5, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(4, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c2 + (c0 - c1))
-- Code(Expression(4, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(3, Add)) at (prev + 3, 1) to (start + 0, 2)
     = (c3 + (c2 + (c0 - c1)))
 
 Function name: if::mcdc_check_both
-Raw bytes (70): 0x[01, 01, 07, 01, 05, 05, 0d, 09, 1a, 01, 05, 0d, 17, 09, 1a, 01, 05, 08, 01, 1f, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 17, 02, 0c, 02, 06, 13, 03, 01, 00, 02]
+Raw bytes (66): 0x[01, 01, 05, 01, 05, 05, 0d, 09, 02, 0d, 13, 09, 02, 08, 01, 1f, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 13, 02, 0c, 02, 06, 0f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 7
+Number of expressions: 5
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(1), rhs = Counter(3)
-- expression 2 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Counter(3), rhs = Expression(5, Add)
-- expression 5 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 2 operands: lhs = Counter(2), rhs = Expression(0, Sub)
+- expression 3 operands: lhs = Counter(3), rhs = Expression(4, Add)
+- expression 4 operands: lhs = Counter(2), rhs = Expression(0, Sub)
 Number of file 0 mappings: 8
 - Code(Counter(0)) at (prev + 31, 1) to (start + 1, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 8) to (start + 0, 14)
@@ -77,23 +71,21 @@ Number of file 0 mappings: 8
     true  = c3
     false = (c1 - c3)
 - Code(Counter(3)) at (prev + 0, 15) to (start + 2, 6)
-- Code(Expression(5, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(4, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c2 + (c0 - c1))
-- Code(Expression(4, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(3, Add)) at (prev + 3, 1) to (start + 0, 2)
     = (c3 + (c2 + (c0 - c1)))
 
 Function name: if::mcdc_check_neither
-Raw bytes (70): 0x[01, 01, 07, 01, 05, 05, 0d, 09, 1a, 01, 05, 0d, 17, 09, 1a, 01, 05, 08, 01, 07, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 17, 02, 0c, 02, 06, 13, 03, 01, 00, 02]
+Raw bytes (66): 0x[01, 01, 05, 01, 05, 05, 0d, 09, 02, 0d, 13, 09, 02, 08, 01, 07, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0d, 00, 0e, 30, 0d, 06, 02, 00, 00, 00, 0d, 00, 0e, 0d, 00, 0f, 02, 06, 13, 02, 0c, 02, 06, 0f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 7
+Number of expressions: 5
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(1), rhs = Counter(3)
-- expression 2 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Counter(3), rhs = Expression(5, Add)
-- expression 5 operands: lhs = Counter(2), rhs = Expression(6, Sub)
-- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 2 operands: lhs = Counter(2), rhs = Expression(0, Sub)
+- expression 3 operands: lhs = Counter(3), rhs = Expression(4, Add)
+- expression 4 operands: lhs = Counter(2), rhs = Expression(0, Sub)
 Number of file 0 mappings: 8
 - Code(Counter(0)) at (prev + 7, 1) to (start + 1, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 8) to (start + 0, 14)
@@ -105,69 +97,63 @@ Number of file 0 mappings: 8
     true  = c3
     false = (c1 - c3)
 - Code(Counter(3)) at (prev + 0, 15) to (start + 2, 6)
-- Code(Expression(5, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(4, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c2 + (c0 - c1))
-- Code(Expression(4, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(3, Add)) at (prev + 3, 1) to (start + 0, 2)
     = (c3 + (c2 + (c0 - c1)))
 
 Function name: if::mcdc_check_not_tree_decision
-Raw bytes (99): 0x[01, 01, 0e, 01, 05, 01, 05, 36, 09, 01, 05, 05, 09, 1b, 11, 05, 09, 0d, 32, 36, 09, 01, 05, 11, 2f, 0d, 32, 36, 09, 01, 05, 0a, 01, 31, 01, 03, 0a, 28, 00, 03, 03, 08, 00, 15, 30, 05, 02, 01, 02, 03, 00, 09, 00, 0a, 36, 00, 0e, 00, 0f, 30, 09, 0a, 03, 02, 00, 00, 0e, 00, 0f, 1b, 00, 14, 00, 15, 30, 11, 16, 02, 00, 00, 00, 14, 00, 15, 11, 00, 16, 02, 06, 2f, 02, 0c, 02, 06, 2b, 03, 01, 00, 02]
+Raw bytes (91): 0x[01, 01, 0a, 01, 05, 02, 09, 05, 09, 13, 11, 05, 09, 0d, 26, 02, 09, 11, 23, 0d, 26, 02, 09, 0a, 01, 31, 01, 03, 0a, 28, 00, 03, 03, 08, 00, 15, 30, 05, 02, 01, 02, 03, 00, 09, 00, 0a, 02, 00, 0e, 00, 0f, 30, 09, 26, 03, 02, 00, 00, 0e, 00, 0f, 13, 00, 14, 00, 15, 30, 11, 0e, 02, 00, 00, 00, 14, 00, 15, 11, 00, 16, 02, 06, 23, 02, 0c, 02, 06, 1f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 14
+Number of expressions: 10
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 1 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 2 operands: lhs = Expression(13, Sub), rhs = Counter(2)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 1 operands: lhs = Expression(0, Sub), rhs = Counter(2)
+- expression 2 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 3 operands: lhs = Expression(4, Add), rhs = Counter(4)
 - expression 4 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 5 operands: lhs = Expression(6, Add), rhs = Counter(4)
-- expression 6 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 7 operands: lhs = Counter(3), rhs = Expression(12, Sub)
-- expression 8 operands: lhs = Expression(13, Sub), rhs = Counter(2)
-- expression 9 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 10 operands: lhs = Counter(4), rhs = Expression(11, Add)
-- expression 11 operands: lhs = Counter(3), rhs = Expression(12, Sub)
-- expression 12 operands: lhs = Expression(13, Sub), rhs = Counter(2)
-- expression 13 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 5 operands: lhs = Counter(3), rhs = Expression(9, Sub)
+- expression 6 operands: lhs = Expression(0, Sub), rhs = Counter(2)
+- expression 7 operands: lhs = Counter(4), rhs = Expression(8, Add)
+- expression 8 operands: lhs = Counter(3), rhs = Expression(9, Sub)
+- expression 9 operands: lhs = Expression(0, Sub), rhs = Counter(2)
 Number of file 0 mappings: 10
 - Code(Counter(0)) at (prev + 49, 1) to (start + 3, 10)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 3 } at (prev + 3, 8) to (start + 0, 21)
 - MCDCBranch { true: Counter(1), false: Expression(0, Sub), condition_id: 1, true_next_id: 2, false_next_id: 3 } at (prev + 0, 9) to (start + 0, 10)
     true  = c1
     false = (c0 - c1)
-- Code(Expression(13, Sub)) at (prev + 0, 14) to (start + 0, 15)
+- Code(Expression(0, Sub)) at (prev + 0, 14) to (start + 0, 15)
     = (c0 - c1)
-- MCDCBranch { true: Counter(2), false: Expression(2, Sub), condition_id: 3, true_next_id: 2, false_next_id: 0 } at (prev + 0, 14) to (start + 0, 15)
+- MCDCBranch { true: Counter(2), false: Expression(9, Sub), condition_id: 3, true_next_id: 2, false_next_id: 0 } at (prev + 0, 14) to (start + 0, 15)
     true  = c2
     false = ((c0 - c1) - c2)
-- Code(Expression(6, Add)) at (prev + 0, 20) to (start + 0, 21)
+- Code(Expression(4, Add)) at (prev + 0, 20) to (start + 0, 21)
     = (c1 + c2)
-- MCDCBranch { true: Counter(4), false: Expression(5, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 20) to (start + 0, 21)
+- MCDCBranch { true: Counter(4), false: Expression(3, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 20) to (start + 0, 21)
     true  = c4
     false = ((c1 + c2) - c4)
 - Code(Counter(4)) at (prev + 0, 22) to (start + 2, 6)
-- Code(Expression(11, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(8, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c3 + ((c0 - c1) - c2))
-- Code(Expression(10, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(7, Add)) at (prev + 3, 1) to (start + 0, 2)
     = (c4 + (c3 + ((c0 - c1) - c2)))
 
 Function name: if::mcdc_check_tree_decision
-Raw bytes (95): 0x[01, 01, 0c, 01, 05, 05, 0d, 05, 0d, 12, 11, 05, 0d, 0d, 11, 09, 2e, 01, 05, 27, 2b, 0d, 11, 09, 2e, 01, 05, 0a, 01, 27, 01, 03, 09, 28, 00, 03, 03, 08, 00, 15, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0e, 00, 0f, 30, 0d, 06, 02, 00, 03, 00, 0e, 00, 0f, 12, 00, 13, 00, 14, 30, 11, 0e, 03, 00, 00, 00, 13, 00, 14, 27, 00, 16, 02, 06, 2b, 02, 0c, 02, 06, 23, 03, 01, 00, 02]
+Raw bytes (91): 0x[01, 01, 0a, 01, 05, 05, 0d, 05, 0d, 12, 11, 05, 0d, 0d, 11, 09, 02, 23, 27, 0d, 11, 09, 02, 0a, 01, 27, 01, 03, 09, 28, 00, 03, 03, 08, 00, 15, 30, 05, 02, 01, 02, 00, 00, 08, 00, 09, 05, 00, 0e, 00, 0f, 30, 0d, 12, 02, 00, 03, 00, 0e, 00, 0f, 12, 00, 13, 00, 14, 30, 11, 0e, 03, 00, 00, 00, 13, 00, 14, 23, 00, 16, 02, 06, 27, 02, 0c, 02, 06, 1f, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 12
+Number of expressions: 10
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(1), rhs = Counter(3)
 - expression 2 operands: lhs = Counter(1), rhs = Counter(3)
 - expression 3 operands: lhs = Expression(4, Sub), rhs = Counter(4)
 - expression 4 operands: lhs = Counter(1), rhs = Counter(3)
 - expression 5 operands: lhs = Counter(3), rhs = Counter(4)
-- expression 6 operands: lhs = Counter(2), rhs = Expression(11, Sub)
-- expression 7 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 8 operands: lhs = Expression(9, Add), rhs = Expression(10, Add)
-- expression 9 operands: lhs = Counter(3), rhs = Counter(4)
-- expression 10 operands: lhs = Counter(2), rhs = Expression(11, Sub)
-- expression 11 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 6 operands: lhs = Counter(2), rhs = Expression(0, Sub)
+- expression 7 operands: lhs = Expression(8, Add), rhs = Expression(9, Add)
+- expression 8 operands: lhs = Counter(3), rhs = Counter(4)
+- expression 9 operands: lhs = Counter(2), rhs = Expression(0, Sub)
 Number of file 0 mappings: 10
 - Code(Counter(0)) at (prev + 39, 1) to (start + 3, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 3 } at (prev + 3, 8) to (start + 0, 21)
@@ -175,7 +161,7 @@ Number of file 0 mappings: 10
     true  = c1
     false = (c0 - c1)
 - Code(Counter(1)) at (prev + 0, 14) to (start + 0, 15)
-- MCDCBranch { true: Counter(3), false: Expression(1, Sub), condition_id: 2, true_next_id: 0, false_next_id: 3 } at (prev + 0, 14) to (start + 0, 15)
+- MCDCBranch { true: Counter(3), false: Expression(4, Sub), condition_id: 2, true_next_id: 0, false_next_id: 3 } at (prev + 0, 14) to (start + 0, 15)
     true  = c3
     false = (c1 - c3)
 - Code(Expression(4, Sub)) at (prev + 0, 19) to (start + 0, 20)
@@ -183,69 +169,65 @@ Number of file 0 mappings: 10
 - MCDCBranch { true: Counter(4), false: Expression(3, Sub), condition_id: 3, true_next_id: 0, false_next_id: 0 } at (prev + 0, 19) to (start + 0, 20)
     true  = c4
     false = ((c1 - c3) - c4)
-- Code(Expression(9, Add)) at (prev + 0, 22) to (start + 2, 6)
+- Code(Expression(8, Add)) at (prev + 0, 22) to (start + 2, 6)
     = (c3 + c4)
-- Code(Expression(10, Add)) at (prev + 2, 12) to (start + 2, 6)
+- Code(Expression(9, Add)) at (prev + 2, 12) to (start + 2, 6)
     = (c2 + (c0 - c1))
-- Code(Expression(8, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(7, Add)) at (prev + 3, 1) to (start + 0, 2)
     = ((c3 + c4) + (c2 + (c0 - c1)))
 
 Function name: if::mcdc_nested_if
-Raw bytes (146): 0x[01, 01, 18, 01, 05, 01, 05, 5e, 09, 01, 05, 05, 09, 3f, 15, 05, 09, 3f, 3a, 05, 09, 3f, 15, 05, 09, 3f, 15, 05, 09, 3a, 0d, 3f, 15, 05, 09, 11, 15, 5e, 09, 01, 05, 53, 5a, 0d, 57, 11, 15, 5e, 09, 01, 05, 0e, 01, 3b, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 00, 02, 00, 08, 00, 09, 5e, 00, 0d, 00, 0e, 30, 09, 0a, 02, 00, 00, 00, 0d, 00, 0e, 3f, 01, 09, 01, 0d, 28, 01, 02, 01, 0c, 00, 12, 30, 3a, 1e, 01, 02, 00, 00, 0c, 00, 0d, 3a, 00, 11, 00, 12, 30, 0d, 36, 02, 00, 00, 00, 11, 00, 12, 0d, 00, 13, 02, 0a, 57, 02, 0a, 00, 0b, 5a, 01, 0c, 02, 06, 4f, 03, 01, 00, 02]
+Raw bytes (138): 0x[01, 01, 14, 01, 05, 02, 09, 05, 09, 37, 15, 05, 09, 37, 32, 05, 09, 37, 15, 05, 09, 37, 15, 05, 09, 32, 0d, 37, 15, 05, 09, 11, 15, 02, 09, 47, 4e, 0d, 4b, 11, 15, 02, 09, 0e, 01, 3b, 01, 01, 09, 28, 00, 02, 01, 08, 00, 0e, 30, 05, 02, 01, 00, 02, 00, 08, 00, 09, 02, 00, 0d, 00, 0e, 30, 09, 4e, 02, 00, 00, 00, 0d, 00, 0e, 37, 01, 09, 01, 0d, 28, 01, 02, 01, 0c, 00, 12, 30, 32, 16, 01, 02, 00, 00, 0c, 00, 0d, 32, 00, 11, 00, 12, 30, 0d, 2e, 02, 00, 00, 00, 11, 00, 12, 0d, 00, 13, 02, 0a, 4b, 02, 0a, 00, 0b, 4e, 01, 0c, 02, 06, 43, 03, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 24
+Number of expressions: 20
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 1 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 2 operands: lhs = Expression(23, Sub), rhs = Counter(2)
-- expression 3 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 1 operands: lhs = Expression(0, Sub), rhs = Counter(2)
+- expression 2 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 3 operands: lhs = Expression(13, Add), rhs = Counter(5)
 - expression 4 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 5 operands: lhs = Expression(15, Add), rhs = Counter(5)
+- expression 5 operands: lhs = Expression(13, Add), rhs = Expression(12, Sub)
 - expression 6 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 7 operands: lhs = Expression(15, Add), rhs = Expression(14, Sub)
+- expression 7 operands: lhs = Expression(13, Add), rhs = Counter(5)
 - expression 8 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 9 operands: lhs = Expression(15, Add), rhs = Counter(5)
+- expression 9 operands: lhs = Expression(13, Add), rhs = Counter(5)
 - expression 10 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 11 operands: lhs = Expression(15, Add), rhs = Counter(5)
-- expression 12 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 13 operands: lhs = Expression(14, Sub), rhs = Counter(3)
-- expression 14 operands: lhs = Expression(15, Add), rhs = Counter(5)
-- expression 15 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 16 operands: lhs = Counter(4), rhs = Counter(5)
-- expression 17 operands: lhs = Expression(23, Sub), rhs = Counter(2)
-- expression 18 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 19 operands: lhs = Expression(20, Add), rhs = Expression(22, Sub)
-- expression 20 operands: lhs = Counter(3), rhs = Expression(21, Add)
-- expression 21 operands: lhs = Counter(4), rhs = Counter(5)
-- expression 22 operands: lhs = Expression(23, Sub), rhs = Counter(2)
-- expression 23 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 11 operands: lhs = Expression(12, Sub), rhs = Counter(3)
+- expression 12 operands: lhs = Expression(13, Add), rhs = Counter(5)
+- expression 13 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 14 operands: lhs = Counter(4), rhs = Counter(5)
+- expression 15 operands: lhs = Expression(0, Sub), rhs = Counter(2)
+- expression 16 operands: lhs = Expression(17, Add), rhs = Expression(19, Sub)
+- expression 17 operands: lhs = Counter(3), rhs = Expression(18, Add)
+- expression 18 operands: lhs = Counter(4), rhs = Counter(5)
+- expression 19 operands: lhs = Expression(0, Sub), rhs = Counter(2)
 Number of file 0 mappings: 14
 - Code(Counter(0)) at (prev + 59, 1) to (start + 1, 9)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 8) to (start + 0, 14)
 - MCDCBranch { true: Counter(1), false: Expression(0, Sub), condition_id: 1, true_next_id: 0, false_next_id: 2 } at (prev + 0, 8) to (start + 0, 9)
     true  = c1
     false = (c0 - c1)
-- Code(Expression(23, Sub)) at (prev + 0, 13) to (start + 0, 14)
+- Code(Expression(0, Sub)) at (prev + 0, 13) to (start + 0, 14)
     = (c0 - c1)
-- MCDCBranch { true: Counter(2), false: Expression(2, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 13) to (start + 0, 14)
+- MCDCBranch { true: Counter(2), false: Expression(19, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 13) to (start + 0, 14)
     true  = c2
     false = ((c0 - c1) - c2)
-- Code(Expression(15, Add)) at (prev + 1, 9) to (start + 1, 13)
+- Code(Expression(13, Add)) at (prev + 1, 9) to (start + 1, 13)
     = (c1 + c2)
 - MCDCDecision { bitmap_idx: 1, conditions_num: 2 } at (prev + 1, 12) to (start + 0, 18)
-- MCDCBranch { true: Expression(14, Sub), false: Expression(7, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 12) to (start + 0, 13)
+- MCDCBranch { true: Expression(12, Sub), false: Expression(5, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 12) to (start + 0, 13)
     true  = ((c1 + c2) - c5)
     false = ((c1 + c2) - ((c1 + c2) - c5))
-- Code(Expression(14, Sub)) at (prev + 0, 17) to (start + 0, 18)
+- Code(Expression(12, Sub)) at (prev + 0, 17) to (start + 0, 18)
     = ((c1 + c2) - c5)
-- MCDCBranch { true: Counter(3), false: Expression(13, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 17) to (start + 0, 18)
+- MCDCBranch { true: Counter(3), false: Expression(11, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 17) to (start + 0, 18)
     true  = c3
     false = (((c1 + c2) - c5) - c3)
 - Code(Counter(3)) at (prev + 0, 19) to (start + 2, 10)
-- Code(Expression(21, Add)) at (prev + 2, 10) to (start + 0, 11)
+- Code(Expression(18, Add)) at (prev + 2, 10) to (start + 0, 11)
     = (c4 + c5)
-- Code(Expression(22, Sub)) at (prev + 1, 12) to (start + 2, 6)
+- Code(Expression(19, Sub)) at (prev + 1, 12) to (start + 2, 6)
     = ((c0 - c1) - c2)
-- Code(Expression(19, Add)) at (prev + 3, 1) to (start + 0, 2)
+- Code(Expression(16, Add)) at (prev + 3, 1) to (start + 0, 2)
     = ((c3 + (c4 + c5)) + ((c0 - c1) - c2))
 

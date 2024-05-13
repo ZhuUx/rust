@@ -1,5 +1,5 @@
 Function name: if_let::joint_or_patterns
-Raw bytes (529): 0x[01, 01, 75, 15, 19, 01, 03, 01, 83, 01, 05, 09, 01, 83, 01, 05, 09, 01, 7e, 01, 83, 01, 05, 09, 7e, 11, 01, 83, 01, 05, 09, 7e, 7a, 01, 83, 01, 05, 09, 7e, 11, 01, 83, 01, 05, 09, 01, 05, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 77, 19, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 77, 15, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, 97, 03, cb, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 97, 03, fe, 02, 9b, 03, 03, 9f, 03, 11, 09, 0d, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, fa, 02, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 97, 03, 1d, 9b, 03, 03, 9f, 03, 11, 09, 0d, 3d, 35, cf, 02, eb, 02, fa, 02, 1d, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 3d, 35, 39, 31, f7, 02, 93, 03, fa, 02, 1d, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 39, 31, 9b, 03, 03, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, c3, 03, 2d, c7, 03, 29, 21, 25, bf, 03, cb, 03, c3, 03, 2d, c7, 03, 29, 21, 25, cf, 03, 3d, d3, 03, 39, 31, 35, 1c, 01, 26, 01, 00, 27, 20, 03, 06, 01, 0c, 00, 40, 7e, 00, 0d, 00, 28, 28, 00, 05, 00, 0d, 00, 46, 30, 7e, 1a, 01, 02, 03, 00, 0d, 00, 14, 30, 7a, 32, 02, 04, 00, 00, 14, 00, 1b, 30, 05, 4a, 03, 04, 00, 00, 1f, 00, 28, 77, 00, 2a, 00, 3f, 30, 19, 5e, 04, 00, 05, 00, 2a, 00, 33, 30, 15, 72, 05, 00, 00, 00, 36, 00, 3f, 01, 00, 43, 00, 46, 03, 00, 47, 02, 06, 9b, 03, 02, 06, 00, 07, 20, cb, 03, 9a, 01, 03, 0c, 00, 40, 28, 04, 05, 00, 0d, 00, 46, 30, fe, 02, ca, 01, 01, 02, 03, 00, 0d, 00, 14, 30, fa, 02, 86, 02, 02, 04, 00, 00, 14, 00, 1b, 3d, 00, 19, 00, 1a, 30, 1d, b6, 02, 03, 04, 00, 00, 1f, 00, 28, 35, 00, 26, 00, 27, 30, eb, 02, ca, 02, 04, 00, 05, 00, 2a, 00, 33, 3d, 00, 31, 00, 32, 30, 93, 03, f2, 02, 05, 00, 00, 00, 36, 00, 3f, 39, 00, 3d, 00, 3e, 97, 03, 00, 43, 00, 46, cb, 03, 00, 47, 02, 06, bf, 03, 02, 06, 00, 07, bb, 03, 01, 01, 00, 02]
+Raw bytes (529): 0x[01, 01, 75, 15, 19, 01, 03, 01, 83, 01, 05, 09, 01, 83, 01, 05, 09, 01, 7e, 01, 83, 01, 05, 09, 7e, 11, 01, 83, 01, 05, 09, 7e, 7a, 01, 83, 01, 05, 09, 7e, 11, 01, 83, 01, 05, 09, 01, 05, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 77, 19, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 77, 15, 05, 7a, 7e, 11, 01, 83, 01, 05, 09, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, 97, 03, cb, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 97, 03, fe, 02, 9b, 03, 03, 9f, 03, 11, 09, 0d, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, fa, 02, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 97, 03, 1d, 9b, 03, 03, 9f, 03, 11, 09, 0d, 3d, 35, f7, 02, eb, 02, fa, 02, 1d, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 3d, 35, 39, 31, f7, 02, 93, 03, fa, 02, 1d, fe, 02, 29, 97, 03, 8f, 03, 9b, 03, 03, 9f, 03, 11, 09, 0d, 1d, 21, 39, 31, 9b, 03, 03, 9f, 03, 11, 09, 0d, cf, 03, 3d, d3, 03, 39, 31, 35, c3, 03, 2d, c7, 03, 29, 21, 25, bf, 03, cb, 03, c3, 03, 2d, c7, 03, 29, 21, 25, cf, 03, 3d, d3, 03, 39, 31, 35, 1c, 01, 26, 01, 00, 27, 20, 03, 06, 01, 0c, 00, 40, 7e, 00, 0d, 00, 28, 28, 00, 05, 00, 0d, 00, 46, 30, 7e, 1a, 01, 02, 03, 00, 0d, 00, 14, 30, 7a, 32, 02, 04, 00, 00, 14, 00, 1b, 30, 05, 4a, 03, 04, 00, 00, 1f, 00, 28, 77, 00, 2a, 00, 3f, 30, 19, 5e, 04, 00, 05, 00, 2a, 00, 33, 30, 15, 72, 05, 00, 00, 00, 36, 00, 3f, 01, 00, 43, 00, 46, 03, 00, 47, 02, 06, 9b, 03, 02, 06, 00, 07, 20, cb, 03, 9a, 01, 03, 0c, 00, 40, 28, 04, 05, 00, 0d, 00, 46, 30, fe, 02, ca, 01, 01, 02, 03, 00, 0d, 00, 14, 30, fa, 02, 86, 02, 02, 04, 00, 00, 14, 00, 1b, 3d, 00, 19, 00, 1a, 30, 1d, b6, 02, 03, 04, 00, 00, 1f, 00, 28, 35, 00, 26, 00, 27, 30, eb, 02, ca, 02, 04, 00, 05, 00, 2a, 00, 33, 3d, 00, 31, 00, 32, 30, 93, 03, f2, 02, 05, 00, 00, 00, 36, 00, 3f, 39, 00, 3d, 00, 3e, 97, 03, 00, 43, 00, 46, cb, 03, 00, 47, 02, 06, bf, 03, 02, 06, 00, 07, bb, 03, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
 Number of expressions: 117
@@ -85,7 +85,7 @@ Number of expressions: 117
 - expression 79 operands: lhs = Expression(103, Add), rhs = Counter(4)
 - expression 80 operands: lhs = Counter(2), rhs = Counter(3)
 - expression 81 operands: lhs = Counter(15), rhs = Counter(13)
-- expression 82 operands: lhs = Expression(83, Add), rhs = Expression(90, Add)
+- expression 82 operands: lhs = Expression(93, Add), rhs = Expression(90, Add)
 - expression 83 operands: lhs = Expression(94, Sub), rhs = Counter(7)
 - expression 84 operands: lhs = Expression(95, Sub), rhs = Counter(10)
 - expression 85 operands: lhs = Expression(101, Add), rhs = Expression(99, Add)
@@ -183,36 +183,34 @@ Number of file 0 mappings: 28
     = ((((c8 + c9) + c10) + c11) + (((c12 + c13) + c14) + c15))
 
 Function name: if_let::joint_pattern_with_or
-Raw bytes (130): 0x[01, 01, 15, 36, 0b, 01, 05, 11, 09, 11, 15, 01, 53, 11, 15, 36, 02, 01, 05, 02, 15, 36, 11, 01, 05, 01, 05, 01, 36, 01, 05, 11, 15, 4f, 0d, 05, 09, 4b, 53, 4f, 0d, 05, 09, 11, 15, 0c, 01, 20, 01, 00, 2b, 02, 01, 0c, 00, 34, 20, 53, 12, 00, 0c, 00, 34, 28, 00, 04, 00, 0d, 00, 3a, 30, 02, 1a, 02, 03, 04, 00, 0d, 00, 14, 30, 15, 22, 03, 00, 00, 00, 14, 00, 1b, 30, 11, 26, 04, 00, 00, 00, 1f, 00, 28, 30, 36, 32, 01, 02, 00, 00, 2a, 00, 33, 01, 00, 37, 00, 3a, 53, 00, 3b, 02, 06, 4b, 02, 06, 00, 07, 47, 01, 01, 00, 02]
+Raw bytes (126): 0x[01, 01, 13, 2e, 0b, 01, 05, 11, 09, 11, 15, 01, 4b, 11, 15, 2e, 02, 01, 05, 02, 15, 2e, 11, 01, 05, 01, 05, 11, 15, 47, 0d, 05, 09, 43, 4b, 47, 0d, 05, 09, 11, 15, 0c, 01, 20, 01, 00, 2b, 02, 01, 0c, 00, 34, 20, 4b, 12, 00, 0c, 00, 34, 28, 00, 04, 00, 0d, 00, 3a, 30, 02, 1a, 02, 03, 04, 00, 0d, 00, 14, 30, 15, 22, 03, 00, 00, 00, 14, 00, 1b, 30, 11, 26, 04, 00, 00, 00, 1f, 00, 28, 30, 2e, 05, 01, 02, 00, 00, 2a, 00, 33, 01, 00, 37, 00, 3a, 4b, 00, 3b, 02, 06, 43, 02, 06, 00, 07, 3f, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 21
-- expression 0 operands: lhs = Expression(13, Sub), rhs = Expression(2, Add)
+Number of expressions: 19
+- expression 0 operands: lhs = Expression(11, Sub), rhs = Expression(2, Add)
 - expression 1 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 2 operands: lhs = Counter(4), rhs = Counter(2)
 - expression 3 operands: lhs = Counter(4), rhs = Counter(5)
-- expression 4 operands: lhs = Counter(0), rhs = Expression(20, Add)
+- expression 4 operands: lhs = Counter(0), rhs = Expression(18, Add)
 - expression 5 operands: lhs = Counter(4), rhs = Counter(5)
-- expression 6 operands: lhs = Expression(13, Sub), rhs = Expression(0, Sub)
+- expression 6 operands: lhs = Expression(11, Sub), rhs = Expression(0, Sub)
 - expression 7 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 8 operands: lhs = Expression(0, Sub), rhs = Counter(5)
-- expression 9 operands: lhs = Expression(13, Sub), rhs = Counter(4)
+- expression 9 operands: lhs = Expression(11, Sub), rhs = Counter(4)
 - expression 10 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 11 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 12 operands: lhs = Counter(0), rhs = Expression(13, Sub)
-- expression 13 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 14 operands: lhs = Counter(4), rhs = Counter(5)
-- expression 15 operands: lhs = Expression(19, Add), rhs = Counter(3)
-- expression 16 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 17 operands: lhs = Expression(18, Add), rhs = Expression(20, Add)
-- expression 18 operands: lhs = Expression(19, Add), rhs = Counter(3)
-- expression 19 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 20 operands: lhs = Counter(4), rhs = Counter(5)
+- expression 12 operands: lhs = Counter(4), rhs = Counter(5)
+- expression 13 operands: lhs = Expression(17, Add), rhs = Counter(3)
+- expression 14 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 15 operands: lhs = Expression(16, Add), rhs = Expression(18, Add)
+- expression 16 operands: lhs = Expression(17, Add), rhs = Counter(3)
+- expression 17 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 18 operands: lhs = Counter(4), rhs = Counter(5)
 Number of file 0 mappings: 12
 - Code(Counter(0)) at (prev + 32, 1) to (start + 0, 43)
 - Code(Expression(0, Sub)) at (prev + 1, 12) to (start + 0, 52)
     = ((c0 - c1) - (c4 + c2))
-- Branch { true: Expression(20, Add), false: Expression(4, Sub) } at (prev + 0, 12) to (start + 0, 52)
+- Branch { true: Expression(18, Add), false: Expression(4, Sub) } at (prev + 0, 12) to (start + 0, 52)
     true  = (c4 + c5)
     false = (c0 - (c4 + c5))
 - MCDCDecision { bitmap_idx: 0, conditions_num: 4 } at (prev + 0, 13) to (start + 0, 58)
@@ -225,50 +223,48 @@ Number of file 0 mappings: 12
 - MCDCBranch { true: Counter(4), false: Expression(9, Sub), condition_id: 4, true_next_id: 0, false_next_id: 0 } at (prev + 0, 31) to (start + 0, 40)
     true  = c4
     false = ((c0 - c1) - c4)
-- MCDCBranch { true: Expression(13, Sub), false: Expression(12, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 42) to (start + 0, 51)
+- MCDCBranch { true: Expression(11, Sub), false: Counter(1), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 42) to (start + 0, 51)
     true  = (c0 - c1)
-    false = (c0 - (c0 - c1))
+    false = c1
 - Code(Counter(0)) at (prev + 0, 55) to (start + 0, 58)
-- Code(Expression(20, Add)) at (prev + 0, 59) to (start + 2, 6)
+- Code(Expression(18, Add)) at (prev + 0, 59) to (start + 2, 6)
     = (c4 + c5)
-- Code(Expression(18, Add)) at (prev + 2, 6) to (start + 0, 7)
+- Code(Expression(16, Add)) at (prev + 2, 6) to (start + 0, 7)
     = ((c1 + c2) + c3)
-- Code(Expression(17, Add)) at (prev + 1, 1) to (start + 0, 2)
+- Code(Expression(15, Add)) at (prev + 1, 1) to (start + 0, 2)
     = (((c1 + c2) + c3) + (c4 + c5))
 
 Function name: if_let::let_else
-Raw bytes (83): 0x[01, 01, 0a, 01, 0d, 01, 05, 01, 1a, 01, 05, 1a, 0d, 01, 05, 01, 05, 05, 09, 27, 0d, 05, 09, 09, 01, 31, 01, 00, 19, 28, 00, 02, 01, 09, 00, 18, 20, 0d, 02, 00, 09, 00, 18, 30, 1a, 0a, 01, 02, 00, 00, 09, 00, 10, 30, 0d, 12, 02, 00, 00, 00, 10, 00, 17, 1a, 00, 1b, 00, 20, 27, 00, 28, 00, 2e, 0d, 01, 05, 00, 13, 23, 01, 01, 00, 02]
+Raw bytes (79): 0x[01, 01, 08, 01, 0d, 01, 05, 12, 0d, 01, 05, 01, 05, 05, 09, 1f, 0d, 05, 09, 09, 01, 31, 01, 00, 19, 28, 00, 02, 01, 09, 00, 18, 20, 0d, 02, 00, 09, 00, 18, 30, 12, 05, 01, 02, 00, 00, 09, 00, 10, 30, 0d, 0a, 02, 00, 00, 00, 10, 00, 17, 12, 00, 1b, 00, 20, 1f, 00, 28, 00, 2e, 0d, 01, 05, 00, 13, 1b, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 10
+Number of expressions: 8
 - expression 0 operands: lhs = Counter(0), rhs = Counter(3)
 - expression 1 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 2 operands: lhs = Counter(0), rhs = Expression(6, Sub)
+- expression 2 operands: lhs = Expression(4, Sub), rhs = Counter(3)
 - expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Expression(6, Sub), rhs = Counter(3)
-- expression 5 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 4 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 5 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 6 operands: lhs = Expression(7, Add), rhs = Counter(3)
 - expression 7 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 8 operands: lhs = Expression(9, Add), rhs = Counter(3)
-- expression 9 operands: lhs = Counter(1), rhs = Counter(2)
 Number of file 0 mappings: 9
 - Code(Counter(0)) at (prev + 49, 1) to (start + 0, 25)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 2 } at (prev + 1, 9) to (start + 0, 24)
 - Branch { true: Counter(3), false: Expression(0, Sub) } at (prev + 0, 9) to (start + 0, 24)
     true  = c3
     false = (c0 - c3)
-- MCDCBranch { true: Expression(6, Sub), false: Expression(2, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 9) to (start + 0, 16)
+- MCDCBranch { true: Expression(4, Sub), false: Counter(1), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 9) to (start + 0, 16)
     true  = (c0 - c1)
-    false = (c0 - (c0 - c1))
-- MCDCBranch { true: Counter(3), false: Expression(4, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 16) to (start + 0, 23)
+    false = c1
+- MCDCBranch { true: Counter(3), false: Expression(2, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 16) to (start + 0, 23)
     true  = c3
     false = ((c0 - c1) - c3)
-- Code(Expression(6, Sub)) at (prev + 0, 27) to (start + 0, 32)
+- Code(Expression(4, Sub)) at (prev + 0, 27) to (start + 0, 32)
     = (c0 - c1)
-- Code(Expression(9, Add)) at (prev + 0, 40) to (start + 0, 46)
+- Code(Expression(7, Add)) at (prev + 0, 40) to (start + 0, 46)
     = (c1 + c2)
 - Code(Counter(3)) at (prev + 1, 5) to (start + 0, 19)
-- Code(Expression(8, Add)) at (prev + 1, 1) to (start + 0, 2)
+- Code(Expression(6, Add)) at (prev + 1, 1) to (start + 0, 2)
     = ((c1 + c2) + c3)
 
 Function name: if_let::main
@@ -280,24 +276,22 @@ Number of file 0 mappings: 1
 - Code(Counter(0)) at (prev + 54, 1) to (start + 23, 2)
 
 Function name: if_let::simple_joint_pattern
-Raw bytes (106): 0x[01, 01, 0e, 22, 09, 01, 05, 01, 11, 01, 05, 01, 22, 01, 05, 02, 11, 22, 02, 01, 05, 37, 0d, 05, 09, 33, 11, 37, 0d, 05, 09, 0b, 01, 1a, 01, 00, 2a, 02, 01, 0c, 00, 28, 20, 11, 0a, 00, 0c, 00, 28, 28, 00, 03, 00, 0d, 00, 2e, 30, 22, 12, 01, 02, 00, 00, 0d, 00, 14, 30, 11, 1a, 03, 00, 00, 00, 14, 00, 1b, 30, 02, 1e, 02, 03, 00, 00, 1e, 00, 27, 01, 00, 2b, 00, 2e, 11, 00, 2f, 02, 06, 33, 02, 06, 00, 07, 2f, 01, 01, 00, 02]
+Raw bytes (102): 0x[01, 01, 0c, 1a, 09, 01, 05, 01, 11, 01, 05, 02, 11, 1a, 02, 01, 05, 2f, 0d, 05, 09, 2b, 11, 2f, 0d, 05, 09, 0b, 01, 1a, 01, 00, 2a, 02, 01, 0c, 00, 28, 20, 11, 0a, 00, 0c, 00, 28, 28, 00, 03, 00, 0d, 00, 2e, 30, 1a, 05, 01, 02, 00, 00, 0d, 00, 14, 30, 11, 12, 03, 00, 00, 00, 14, 00, 1b, 30, 02, 16, 02, 03, 00, 00, 1e, 00, 27, 01, 00, 2b, 00, 2e, 11, 00, 2f, 02, 06, 2b, 02, 06, 00, 07, 27, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 14
-- expression 0 operands: lhs = Expression(8, Sub), rhs = Counter(2)
+Number of expressions: 12
+- expression 0 operands: lhs = Expression(6, Sub), rhs = Counter(2)
 - expression 1 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 2 operands: lhs = Counter(0), rhs = Counter(4)
 - expression 3 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 4 operands: lhs = Counter(0), rhs = Expression(8, Sub)
-- expression 5 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 6 operands: lhs = Expression(0, Sub), rhs = Counter(4)
-- expression 7 operands: lhs = Expression(8, Sub), rhs = Expression(0, Sub)
-- expression 8 operands: lhs = Counter(0), rhs = Counter(1)
-- expression 9 operands: lhs = Expression(13, Add), rhs = Counter(3)
-- expression 10 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 11 operands: lhs = Expression(12, Add), rhs = Counter(4)
-- expression 12 operands: lhs = Expression(13, Add), rhs = Counter(3)
-- expression 13 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 4 operands: lhs = Expression(0, Sub), rhs = Counter(4)
+- expression 5 operands: lhs = Expression(6, Sub), rhs = Expression(0, Sub)
+- expression 6 operands: lhs = Counter(0), rhs = Counter(1)
+- expression 7 operands: lhs = Expression(11, Add), rhs = Counter(3)
+- expression 8 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 9 operands: lhs = Expression(10, Add), rhs = Counter(4)
+- expression 10 operands: lhs = Expression(11, Add), rhs = Counter(3)
+- expression 11 operands: lhs = Counter(1), rhs = Counter(2)
 Number of file 0 mappings: 11
 - Code(Counter(0)) at (prev + 26, 1) to (start + 0, 42)
 - Code(Expression(0, Sub)) at (prev + 1, 12) to (start + 0, 40)
@@ -306,20 +300,20 @@ Number of file 0 mappings: 11
     true  = c4
     false = (c0 - c4)
 - MCDCDecision { bitmap_idx: 0, conditions_num: 3 } at (prev + 0, 13) to (start + 0, 46)
-- MCDCBranch { true: Expression(8, Sub), false: Expression(4, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 13) to (start + 0, 20)
+- MCDCBranch { true: Expression(6, Sub), false: Counter(1), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 13) to (start + 0, 20)
     true  = (c0 - c1)
-    false = (c0 - (c0 - c1))
-- MCDCBranch { true: Counter(4), false: Expression(6, Sub), condition_id: 3, true_next_id: 0, false_next_id: 0 } at (prev + 0, 20) to (start + 0, 27)
+    false = c1
+- MCDCBranch { true: Counter(4), false: Expression(4, Sub), condition_id: 3, true_next_id: 0, false_next_id: 0 } at (prev + 0, 20) to (start + 0, 27)
     true  = c4
     false = (((c0 - c1) - c2) - c4)
-- MCDCBranch { true: Expression(0, Sub), false: Expression(7, Sub), condition_id: 2, true_next_id: 3, false_next_id: 0 } at (prev + 0, 30) to (start + 0, 39)
+- MCDCBranch { true: Expression(0, Sub), false: Expression(5, Sub), condition_id: 2, true_next_id: 3, false_next_id: 0 } at (prev + 0, 30) to (start + 0, 39)
     true  = ((c0 - c1) - c2)
     false = ((c0 - c1) - ((c0 - c1) - c2))
 - Code(Counter(0)) at (prev + 0, 43) to (start + 0, 46)
 - Code(Counter(4)) at (prev + 0, 47) to (start + 2, 6)
-- Code(Expression(12, Add)) at (prev + 2, 6) to (start + 0, 7)
+- Code(Expression(10, Add)) at (prev + 2, 6) to (start + 0, 7)
     = ((c1 + c2) + c3)
-- Code(Expression(11, Add)) at (prev + 1, 1) to (start + 0, 2)
+- Code(Expression(9, Add)) at (prev + 1, 1) to (start + 0, 2)
     = (((c1 + c2) + c3) + c4)
 
 Function name: if_let::simple_or_pattern
@@ -357,17 +351,16 @@ Number of file 0 mappings: 8
     = (c2 + (c1 + (c0 - (c1 + c2))))
 
 Function name: if_let::single_nested_pattern
-Raw bytes (82): 0x[01, 01, 07, 01, 05, 01, 0d, 01, 02, 02, 0d, 05, 09, 1b, 0d, 05, 09, 0a, 01, 0e, 01, 00, 24, 02, 01, 0c, 00, 1b, 28, 00, 02, 00, 0c, 00, 21, 20, 0d, 06, 00, 0c, 00, 1b, 30, 02, 0a, 01, 02, 00, 00, 0c, 00, 13, 30, 0d, 0e, 02, 00, 00, 00, 13, 00, 1a, 01, 00, 1e, 00, 21, 0d, 00, 22, 02, 06, 1b, 02, 06, 00, 07, 17, 01, 01, 00, 02]
+Raw bytes (80): 0x[01, 01, 06, 01, 05, 01, 0d, 02, 0d, 05, 09, 17, 0d, 05, 09, 0a, 01, 0e, 01, 00, 24, 02, 01, 0c, 00, 1b, 28, 00, 02, 00, 0c, 00, 21, 20, 0d, 06, 00, 0c, 00, 1b, 30, 02, 05, 01, 02, 00, 00, 0c, 00, 13, 30, 0d, 0a, 02, 00, 00, 00, 13, 00, 1a, 01, 00, 1e, 00, 21, 0d, 00, 22, 02, 06, 17, 02, 06, 00, 07, 13, 01, 01, 00, 02]
 Number of files: 1
 - file 0 => global file 1
-Number of expressions: 7
+Number of expressions: 6
 - expression 0 operands: lhs = Counter(0), rhs = Counter(1)
 - expression 1 operands: lhs = Counter(0), rhs = Counter(3)
-- expression 2 operands: lhs = Counter(0), rhs = Expression(0, Sub)
-- expression 3 operands: lhs = Expression(0, Sub), rhs = Counter(3)
-- expression 4 operands: lhs = Counter(1), rhs = Counter(2)
-- expression 5 operands: lhs = Expression(6, Add), rhs = Counter(3)
-- expression 6 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 2 operands: lhs = Expression(0, Sub), rhs = Counter(3)
+- expression 3 operands: lhs = Counter(1), rhs = Counter(2)
+- expression 4 operands: lhs = Expression(5, Add), rhs = Counter(3)
+- expression 5 operands: lhs = Counter(1), rhs = Counter(2)
 Number of file 0 mappings: 10
 - Code(Counter(0)) at (prev + 14, 1) to (start + 0, 36)
 - Code(Expression(0, Sub)) at (prev + 1, 12) to (start + 0, 27)
@@ -376,16 +369,16 @@ Number of file 0 mappings: 10
 - Branch { true: Counter(3), false: Expression(1, Sub) } at (prev + 0, 12) to (start + 0, 27)
     true  = c3
     false = (c0 - c3)
-- MCDCBranch { true: Expression(0, Sub), false: Expression(2, Sub), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 12) to (start + 0, 19)
+- MCDCBranch { true: Expression(0, Sub), false: Counter(1), condition_id: 1, true_next_id: 2, false_next_id: 0 } at (prev + 0, 12) to (start + 0, 19)
     true  = (c0 - c1)
-    false = (c0 - (c0 - c1))
-- MCDCBranch { true: Counter(3), false: Expression(3, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 19) to (start + 0, 26)
+    false = c1
+- MCDCBranch { true: Counter(3), false: Expression(2, Sub), condition_id: 2, true_next_id: 0, false_next_id: 0 } at (prev + 0, 19) to (start + 0, 26)
     true  = c3
     false = ((c0 - c1) - c3)
 - Code(Counter(0)) at (prev + 0, 30) to (start + 0, 33)
 - Code(Counter(3)) at (prev + 0, 34) to (start + 2, 6)
-- Code(Expression(6, Add)) at (prev + 2, 6) to (start + 0, 7)
+- Code(Expression(5, Add)) at (prev + 2, 6) to (start + 0, 7)
     = (c1 + c2)
-- Code(Expression(5, Add)) at (prev + 1, 1) to (start + 0, 2)
+- Code(Expression(4, Add)) at (prev + 1, 1) to (start + 0, 2)
     = ((c1 + c2) + c3)
 

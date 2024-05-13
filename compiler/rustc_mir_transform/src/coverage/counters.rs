@@ -62,6 +62,7 @@ pub(super) struct CoverageCounters {
     /// corresponding operator (+ or -) and its LHS/RHS operands.
     expressions: IndexVec<ExpressionId, Expression>,
 
+    expression_reference: FxHashMap<Expression, BcbCounter>,
     /// Some terms referencing to composite expressions count sum execution times
     /// of several basic coverage blocks. Mostly such coverage terms are used by patterns including or pattern.
     /// Expressions for these terms should generate statements to some blocks in case
@@ -84,6 +85,7 @@ impl CoverageCounters {
             bcb_counters: IndexVec::from_elem_n(None, num_bcbs),
             bcb_edge_counters: FxHashMap::default(),
             expressions: IndexVec::new(),
+            expression_reference: FxHashMap::default(),
             combined_bcb_expressions: BTreeMap::new(),
         };
 
@@ -105,8 +107,37 @@ impl CoverageCounters {
         rhs: BcbCounter,
     ) -> BcbCounter {
         let expression = Expression { lhs: lhs.as_term(), op, rhs: rhs.as_term() };
-        let id = self.expressions.push(expression);
-        BcbCounter::Expression { id }
+        if let Some(counter) = self.expression_reference.get(&expression) {
+            *counter
+        } else {
+            let counter = BcbCounter::Expression { id: self.expressions.push(expression.clone()) };
+            self.expression_reference.insert(expression, counter);
+            // Later branches of pattern matching might try to make expression with C2 - (C2 - C1), (C2 - C1) + C1
+            match (lhs, op, rhs) {
+                (BcbCounter::Counter { .. }, Op::Add, BcbCounter::Counter { .. }) => {
+                    self.expression_reference.insert(
+                        Expression { lhs: counter.as_term(), op: Op::Subtract, rhs: lhs.as_term() },
+                        rhs,
+                    );
+                    self.expression_reference.insert(
+                        Expression { lhs: counter.as_term(), op: Op::Subtract, rhs: rhs.as_term() },
+                        lhs,
+                    );
+                }
+                (BcbCounter::Counter { .. }, Op::Subtract, BcbCounter::Counter { .. }) => {
+                    self.expression_reference.insert(
+                        Expression { lhs: counter.as_term(), op: Op::Add, rhs: rhs.as_term() },
+                        lhs,
+                    );
+                    self.expression_reference.insert(
+                        Expression { lhs: lhs.as_term(), op: Op::Subtract, rhs: counter.as_term() },
+                        rhs,
+                    );
+                }
+                _ => {}
+            }
+            counter
+        }
     }
 
     /// Variant of `make_expression` that makes `lhs` optional and assumes [`Op::Add`].

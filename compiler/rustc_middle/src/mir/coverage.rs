@@ -76,7 +76,7 @@ impl ConditionId {
 /// This was originally only used for expression operands (and named `Operand`),
 /// but the zero/counter/expression distinction is also useful for representing
 /// the value of code/gap mappings, and the true/false arms of branch mappings.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
 pub enum CovTerm {
     Zero,
@@ -187,7 +187,7 @@ impl Debug for CodeRegion {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, TyEncodable, TyDecodable, Hash, HashStable)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash, HashStable)]
 #[derive(TypeFoldable, TypeVisitable)]
 pub enum Op {
     Subtract,
@@ -204,12 +204,43 @@ impl Op {
     }
 }
 
-#[derive(Clone, Debug)]
-#[derive(TyEncodable, TyDecodable, Hash, HashStable, TypeFoldable, TypeVisitable)]
+#[derive(Clone, Debug, Eq)]
+#[derive(TyEncodable, TyDecodable, HashStable, TypeFoldable, TypeVisitable)]
 pub struct Expression {
     pub lhs: CovTerm,
     pub op: Op,
     pub rhs: CovTerm,
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        match (self.op, other.op) {
+            (Op::Add, Op::Add) => {
+                (self.lhs == other.lhs && self.rhs == other.rhs)
+                    || (self.lhs == other.rhs && self.rhs == other.lhs)
+            }
+            (Op::Subtract, Op::Subtract) => self.lhs == other.lhs && self.rhs == other.rhs,
+            _ => false,
+        }
+    }
+}
+
+impl std::hash::Hash for Expression {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Expression { lhs, op: Op::Subtract, rhs } => {
+                lhs.hash(state);
+                Op::Subtract.hash(state);
+                rhs.hash(state);
+            }
+            Expression { lhs, op: Op::Add, rhs } => {
+                let [first, second] = if lhs <= rhs { [lhs, rhs] } else { [rhs, lhs] };
+                first.hash(state);
+                Op::Add.hash(state);
+                second.hash(state);
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
