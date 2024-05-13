@@ -732,7 +732,11 @@ impl MCDCInfoBuilder {
             // MCDC is equivalent to normal branch coverage if number of conditions is 1, so ignore these decisions.
             // See comment of `MAX_CONDITIONS_NUM_IN_DECISION` for why decisions with oversized conditions are ignored.
             _ => {
-                self.append_normal_branches(conditions);
+                // Nested decisions with only one condition should be taken as condition of its outer decision directly
+                // in case there were duplicate branches in branch reports.
+                if decision.decision_depth == 0 || conditions.len() > 1 {
+                    self.append_normal_branches(conditions);
+                }
                 if decision.conditions_num > MAX_CONDITIONS_NUM_IN_DECISION {
                     tcx.dcx().emit_warn(MCDCExceedsConditionNumLimit {
                         span: decision.span,
