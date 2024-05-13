@@ -131,7 +131,6 @@
   ------------------
   |  Branch (LL:8): [True: 2, False: 1]
   |  Branch (LL:13): [True: 1, False: 1]
-  |  Branch (LL:16): [True: 1, False: 1]
   ------------------
   |---> MC/DC Decision Region (LL:8) to (LL:41)
   |
