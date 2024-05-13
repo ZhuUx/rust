@@ -2,7 +2,7 @@
    LL|       |//@ edition: 2021
    LL|       |//@ min-llvm-version: 18
    LL|       |//@ compile-flags: -Zcoverage-options=mcdc
-   LL|       |//@ llvm-cov-flags: --show-mcdc
+   LL|       |//@ llvm-cov-flags: --show-branches=count --show-mcdc
    LL|       |
    LL|       |#[derive(Clone, Copy)]
    LL|       |enum Pat {
@@ -14,6 +14,9 @@
    LL|      2|fn single_nested_pattern(pat: Pat) {
    LL|      1|    match pat {
    LL|      1|        Pat::A(Some(_)) => say("matched A::Some"),
+  ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  |  Branch (LL:16): [True: 1, False: 0]
   ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:24)
   |
@@ -34,6 +37,9 @@
   ------------------
    LL|      0|        Pat::A(None) => say("matched A::None"),
   ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  |  Branch (LL:16): [True: 0, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:21)
   |
   |  Number of Conditions: 2
@@ -52,13 +58,22 @@
   |
   ------------------
    LL|      1|        Pat::B(_) => say("matched B"),
+  ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  ------------------
    LL|      0|        Pat::C(_) => say("matched C"),
+  ------------------
+  |  Branch (LL:9): [True: 0, False: 2]
+  ------------------
    LL|       |    }
    LL|      2|}
    LL|       |
    LL|      2|fn simple_or_pattern(pat: Pat) {
    LL|      2|    match pat {
    LL|      1|        Pat::B(_) | Pat::C(_) => say("matched B or C"),
+  ------------------
+  |  Branch (LL:9): [True: 0, False: 2]
+  |  Branch (LL:21): [True: 1, False: 1]
   ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:30)
   |
@@ -85,6 +100,10 @@
    LL|      1|    match pat {
    LL|      1|        (Pat::A(Some(_)), Pat::B(_)) => say("matched A::Some + B"),
   ------------------
+  |  Branch (LL:10): [True: 2, False: 1]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:27): [True: 1, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:37)
   |
   |  Number of Conditions: 3
@@ -106,6 +125,9 @@
   |
   ------------------
    LL|      0|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 2]
+  |  Branch (LL:21): [True: 0, False: 1]
   ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:31)
   |
@@ -132,6 +154,11 @@
    LL|      1|    match pat {
    LL|      2|        (Pat::A(Some(_)) | Pat::C(_), Pat::B(_)) => say("matched A::Some | C + B"),
   ------------------
+  |  Branch (LL:10): [True: 1, False: 2]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 2]
+  |  Branch (LL:39): [True: 3, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:49)
   |
   |  Number of Conditions: 4
@@ -156,6 +183,9 @@
   |
   ------------------
    LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 0]
+  |  Branch (LL:21): [True: 1, False: 3]
   ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:31)
   |
@@ -183,6 +213,12 @@
    LL|      2|        (Pat::A(Some(_)) | Pat::C(_), Pat::B(_) | Pat::C(_)) => say("matched A::Some | C + B | C"),
                        ^1
   ------------------
+  |  Branch (LL:10): [True: 1, False: 3]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 3]
+  |  Branch (LL:39): [True: 2, False: 0]
+  |  Branch (LL:51): [True: 0, False: 2]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:61)
   |
   |  Number of Conditions: 5
@@ -209,6 +245,9 @@
   ------------------
    LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
   ------------------
+  |  Branch (LL:10): [True: 2, False: 0]
+  |  Branch (LL:21): [True: 1, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:31)
   |
   |  Number of Conditions: 2
@@ -234,6 +273,12 @@
    LL|      2|    match pat {
    LL|      1|        (Pat::A(Some(a)) | Pat::C(a), Pat::B(b) | Pat::C(b)) => {
                                                                        ^0
+  ------------------
+  |  Branch (LL:10): [True: 1, False: 3]
+  |  Branch (LL:17): [True: 1, False: 0]
+  |  Branch (LL:28): [True: 1, False: 3]
+  |  Branch (LL:39): [True: 2, False: 0]
+  |  Branch (LL:51): [True: 0, False: 2]
   ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:61)
   |
@@ -263,6 +308,9 @@
    LL|       |        }
    LL|      1|        (Pat::B(_), Pat::C(_)) => say("matched B and C"),
   ------------------
+  |  Branch (LL:10): [True: 2, False: 0]
+  |  Branch (LL:21): [True: 1, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:31)
   |
   |  Number of Conditions: 2
@@ -290,6 +338,9 @@
    LL|      1|        [selected] | [_, selected] => say(&format!("match arm 1: {selected}")),
                                        ^0
   ------------------
+  |  Branch (LL:9): [True: 1, False: 1]
+  |  Branch (LL:22): [True: 0, False: 1]
+  ------------------
   |---> MC/DC Decision Region (LL:9) to (LL:35)
   |
   |  Number of Conditions: 2
@@ -308,6 +359,9 @@
   |
   ------------------
    LL|      1|        [_, _, selected, ..] => say(&format!("match arm 2: {selected}")),
+  ------------------
+  |  Branch (LL:9): [True: 1, False: 0]
+  ------------------
    LL|      0|        _ => say("matched others"),
    LL|       |    }
    LL|      2|}
