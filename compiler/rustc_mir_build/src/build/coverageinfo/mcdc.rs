@@ -13,7 +13,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::build::{Builder, CFG};
-use crate::errors::MCDCExceedsConditionNumLimit;
+use crate::errors::{MCDCExceedsConditionNumLimit, MCDCExceedsDecisionDepth};
 
 /// The MCDC bitmap scales exponentially (2^n) based on the number of conditions seen,
 /// So llvm sets a maximum value prevents the bitmap footprint from growing too large without the user's knowledge.
@@ -742,6 +742,13 @@ impl MCDCInfoBuilder {
                         span: decision.span,
                         conditions_num: decision.conditions_num,
                         max_conditions_num: MAX_CONDITIONS_NUM_IN_DECISION,
+                    });
+                }
+
+                if decision.decision_depth > MAX_DECISION_DEPTH {
+                    tcx.dcx().emit_warn(MCDCExceedsDecisionDepth {
+                        span: decision.span,
+                        max_decision_depth: MAX_DECISION_DEPTH.into(),
                     });
                 }
             }
