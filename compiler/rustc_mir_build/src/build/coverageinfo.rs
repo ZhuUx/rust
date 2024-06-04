@@ -162,18 +162,13 @@ impl BranchInfoBuilder {
             return None;
         }
 
-        let (mut mcdc_branch_spans, mcdc_spans) =
+        let (mcdc_degraded_spans, mcdc_spans) =
             mcdc_info.map(MCDCInfoBuilder::into_done).unwrap_or_default();
-        let mut mcdc_decision_spans = Vec::with_capacity(mcdc_spans.len());
-        for (decision, conditions) in mcdc_spans {
-            mcdc_branch_spans.extend(conditions);
-            mcdc_decision_spans.push(decision);
-        }
         Some(Box::new(mir::coverage::BranchInfo {
             num_block_markers,
             branch_spans,
-            mcdc_branch_spans,
-            mcdc_decision_spans,
+            mcdc_degraded_spans,
+            mcdc_spans,
         }))
     }
 }
