@@ -144,14 +144,14 @@ impl BranchInfoBuilder {
             return None;
         }
 
-        let (mcdc_decision_spans, mcdc_branch_spans) =
+        let (mcdc_degraded_spans, mcdc_spans) =
             mcdc_info.map(MCDCInfoBuilder::into_done).unwrap_or_default();
 
         Some(Box::new(mir::coverage::BranchInfo {
             num_block_markers,
             branch_spans,
-            mcdc_branch_spans,
-            mcdc_decision_spans,
+            mcdc_degraded_spans,
+            mcdc_spans,
         }))
     }
 }
