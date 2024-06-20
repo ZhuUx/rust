@@ -146,7 +146,7 @@ pub enum InstrumentCoverage {
 }
 
 /// Individual flag values controlled by `-Z coverage-options`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CoverageOptions {
     pub level: CoverageLevel,
 
@@ -157,6 +157,33 @@ pub struct CoverageOptions {
     /// For internal debugging only. If other code changes would make it hard
     /// to keep supporting this flag, remove it.
     pub no_mir_spans: bool,
+
+    /// Limit for number of conditions in a decision. By default the limit is
+    /// `32767` and user defined limit shall not be larger than it.
+    pub mcdc_max_conditions: usize,
+
+    /// Limit for number of test vectors of all decisions in a function.
+    /// Each test vectors takes up 1 bit memory. By default the limit is
+    /// `2,147,483,646` and user defined limit shall not be larger than it.
+    pub mcdc_max_test_vectors: usize,
+}
+
+impl Default for CoverageOptions {
+    fn default() -> Self {
+        Self {
+            level: CoverageLevel::default(),
+            no_mir_spans: false,
+            mcdc_max_conditions: Self::MCDC_MAX_CONDITIONS_IN_DECISION,
+            mcdc_max_test_vectors: Self::MCDC_MAX_TEST_VECTORS,
+        }
+    }
+}
+
+impl CoverageOptions {
+    // Maxium number of conditions in a decision specified by LLVM.
+    pub const MCDC_MAX_CONDITIONS_IN_DECISION: usize = 0x7fff;
+    // Maxium number of test vectors in a function specified by LLVM.
+    pub const MCDC_MAX_TEST_VECTORS: usize = 0x7fffffff;
 }
 
 /// Controls whether branch coverage or MC/DC coverage is enabled.

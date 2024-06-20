@@ -965,7 +965,23 @@ mod parse {
                 "condition" => slot.level = CoverageLevel::Condition,
                 "mcdc" => slot.level = CoverageLevel::Mcdc,
                 "no-mir-spans" => slot.no_mir_spans = true,
-                _ => return false,
+                _ => {
+                    if let Some(max_conditions) = option
+                        .strip_prefix("mcdc-max-conditions=")
+                        .and_then(|num| num.parse::<usize>().ok())
+                    {
+                        slot.mcdc_max_conditions =
+                            max_conditions.min(CoverageOptions::MCDC_MAX_CONDITIONS_IN_DECISION);
+                    } else if let Some(max_test_vectors) = option
+                        .strip_prefix("mcdc-test-vectors=")
+                        .and_then(|num| num.parse::<usize>().ok())
+                    {
+                        slot.mcdc_max_test_vectors =
+                            max_test_vectors.min(CoverageOptions::MCDC_MAX_TEST_VECTORS);
+                    } else {
+                        return false;
+                    }
+                }
             }
         }
         true

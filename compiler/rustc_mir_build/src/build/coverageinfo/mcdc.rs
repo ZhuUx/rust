@@ -15,11 +15,6 @@ use rustc_span::Span;
 use crate::build::Builder;
 use crate::errors::{MCDCExceedsConditionLimit, MCDCExceedsDecisionDepth};
 
-/// The MCDC bitmap scales exponentially (2^n) based on the number of conditions seen,
-/// So llvm sets a maximum value prevents the bitmap footprint from growing too large without the user's knowledge.
-/// This limit may be relaxed if the [upstream change](https://github.com/llvm/llvm-project/pull/82448) is merged.
-const MAX_CONDITIONS_IN_DECISION: usize = 6;
-
 /// MCDC allocates an i32 variable on stack for each depth. Ignore decisions nested too much to prevent it
 /// consuming excessive memory.
 const MAX_DECISION_DEPTH: u16 = 0x3FFF;
@@ -356,6 +351,7 @@ pub(crate) struct MCDCInfoBuilder {
     mcdc_targets: FxIndexMap<DecisionId, MCDCTargetInfo>,
     state: MCDCState,
     decision_id_gen: DecisionIdGen,
+    required_num_test_vectors: usize,
 }
 
 impl MCDCInfoBuilder {
@@ -365,6 +361,7 @@ impl MCDCInfoBuilder {
             mcdc_targets: FxIndexMap::default(),
             state: MCDCState::new(),
             decision_id_gen: DecisionIdGen::default(),
+            required_num_test_vectors: 0,
         }
     }
 
@@ -396,27 +393,30 @@ impl MCDCInfoBuilder {
         conditions: Vec<MCDCBranchSpan>,
     ) -> Option<&mut MCDCTargetInfo> {
         let num_conditions = conditions.len();
-        match num_conditions {
-            0 => {
-                unreachable!("Decision with no condition is not expected");
-            }
-            // Ignore decisions with only one condition given that mcdc for them is completely equivalent to branch coverage.
-            2..=MAX_CONDITIONS_IN_DECISION => {
-                let info = MCDCTargetInfo::new(decision, conditions);
-                Some(self.mcdc_targets.entry(id).or_insert(info))
-            }
-            _ => {
-                self.append_normal_branches(conditions);
-                if num_conditions > MAX_CONDITIONS_IN_DECISION {
-                    tcx.dcx().emit_warn(MCDCExceedsConditionLimit {
-                        span: decision.span,
-                        num_conditions,
-                        max_conditions: MAX_CONDITIONS_IN_DECISION,
-                    });
-                }
-                None
-            }
+        let max_conditions = tcx.sess.coverage_mcdc_max_conditions_per_decision();
+        let max_test_vectors = tcx.sess.coverage_mcdc_max_test_vectors();
+        // Ignore decisions with only one condition given that mcdc for them is completely equivalent to branch coverage.
+        if num_conditions <= 1 {
+            return None;
         }
+        if num_conditions > max_conditions {
+            self.append_normal_branches(conditions);
+            tcx.dcx().emit_warn(MCDCExceedsConditionLimit {
+                span: decision.span,
+                num_conditions,
+                max_conditions,
+            });
+            return None;
+        }
+
+        let info = MCDCTargetInfo::new(decision, conditions);
+        let expected_num_tv = info.decision.num_test_vectors + self.required_num_test_vectors;
+        if expected_num_tv > max_test_vectors {
+            self.append_normal_branches(info.conditions);
+            return None;
+        }
+
+        Some(self.mcdc_targets.entry(id).or_insert(info))
     }
 
     fn normalize_depth_from(&mut self, tcx: TyCtxt<'_>, id: DecisionId) {
@@ -499,8 +499,13 @@ impl MCDCInfoBuilder {
     pub(crate) fn into_done(
         self,
     ) -> (Vec<MCDCBranchSpan>, Vec<(MCDCDecisionSpan, Vec<MCDCBranchSpan>)>) {
-        let MCDCInfoBuilder { normal_branch_spans, mcdc_targets, state: _, decision_id_gen: _ } =
-            self;
+        let MCDCInfoBuilder {
+            normal_branch_spans,
+            mcdc_targets,
+            state: _,
+            decision_id_gen: _,
+            required_num_test_vectors: _,
+        } = self;
 
         let mcdc_spans = mcdc_targets
             .into_values()

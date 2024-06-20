@@ -368,6 +368,14 @@ impl Session {
         self.opts.unstable_opts.coverage_options.no_mir_spans
     }
 
+    pub fn coverage_mcdc_max_conditions_per_decision(&self) -> usize {
+        self.opts.unstable_opts.coverage_options.mcdc_max_conditions
+    }
+
+    pub fn coverage_mcdc_max_test_vectors(&self) -> usize {
+        self.opts.unstable_opts.coverage_options.mcdc_max_test_vectors
+    }
+
     pub fn is_sanitizer_cfi_enabled(&self) -> bool {
         self.opts.unstable_opts.sanitizer.contains(SanitizerSet::CFI)
     }
