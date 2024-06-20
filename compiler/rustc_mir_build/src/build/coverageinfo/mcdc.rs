@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use rustc_data_structures::fx::FxIndexMap;
+use rustc_index::IndexVec;
 use rustc_middle::bug;
 use rustc_middle::mir::coverage::{
     BlockMarkerId, ConditionId, ConditionInfo, DecisionId, MCDCBranchMarkers, MCDCBranchSpan,
@@ -14,10 +15,9 @@ use rustc_span::Span;
 use crate::build::Builder;
 use crate::errors::{MCDCExceedsConditionLimit, MCDCExceedsDecisionDepth};
 
-/// The MCDC bitmap scales exponentially (2^n) based on the number of conditions seen,
-/// So llvm sets a maximum value prevents the bitmap footprint from growing too large without the user's knowledge.
-/// This limit may be relaxed if the [upstream change](https://github.com/llvm/llvm-project/pull/82448) is merged.
-const MAX_CONDITIONS_IN_DECISION: usize = 6;
+/// LLVM uses `i16` to represent condition id. Hence `i16::MAX` is the hard limit for number of
+/// conditions in a decision.
+const MAX_CONDITIONS_IN_DECISION: usize = i16::MAX as usize;
 
 /// MCDC allocates an i32 variable on stack for each depth. Ignore decisions nested too much to prevent it
 /// consuming excessive memory.
@@ -41,6 +41,7 @@ impl BooleanDecisionCtx {
                 span: Span::default(),
                 end_markers: vec![],
                 decision_depth: 0,
+                num_test_vectors: 0,
             },
             decision_stack: VecDeque::new(),
             conditions: vec![],
@@ -158,11 +159,11 @@ impl BooleanDecisionCtx {
             self.decision_info.end_markers.push(false_marker);
         }
 
-        self.conditions.push(MCDCBranchSpan {
+        self.conditions.push(MCDCBranchSpan::new(
             span,
             condition_info,
-            markers: MCDCBranchMarkers::Boolean(true_marker, false_marker),
-        });
+            MCDCBranchMarkers::Boolean(true_marker, false_marker),
+        ));
     }
 
     fn is_finished(&self) -> bool {
@@ -257,8 +258,85 @@ struct MCDCTargetInfo {
 }
 
 impl MCDCTargetInfo {
+    fn new(decision: MCDCDecisionSpan, conditions: Vec<MCDCBranchSpan>) -> Self {
+        let mut this = Self { decision, conditions, nested_decisions_id: vec![] };
+        this.calc_test_vectors_index();
+        this
+    }
+
     fn set_depth(&mut self, depth: u16) {
         self.decision.decision_depth = depth;
+    }
+
+    // LLVM checks the executed test vector by accumulate indices of tested branches.
+    // We calculate number of all possible test vectors of the decision and assign indices
+    // for each branch here.
+    // See https://discourse.llvm.org/t/rfc-coverage-new-algorithm-and-file-format-for-mc-dc/76798/ for
+    // more details of the algorithm.
+    // The process of this function is mostly like `TVIdxBuilder` at
+    // https://github.com/llvm/llvm-project/blob/d594d9f7f4dc6eb748b3261917db689fdc348b96/llvm/lib/ProfileData/Coverage/CoverageMapping.cpp#L226
+    fn calc_test_vectors_index(&mut self) {
+        let Self { decision, conditions, .. } = self;
+        let mut indegree_stats = IndexVec::<ConditionId, usize>::from_elem_n(0, conditions.len());
+        // `num_paths` is `width` described at the llvm RFC, which indicates how many paths reaching the condition.
+        let mut num_paths_stats = IndexVec::<ConditionId, usize>::from_elem_n(0, conditions.len());
+        let mut next_conditions = conditions
+            .iter_mut()
+            .map(|branch| {
+                let ConditionInfo { condition_id, true_next_id, false_next_id } =
+                    branch.condition_info;
+                [true_next_id, false_next_id]
+                    .into_iter()
+                    .filter_map(std::convert::identity)
+                    .for_each(|next_id| indegree_stats[next_id] += 1);
+                (condition_id, branch)
+            })
+            .collect::<FxIndexMap<_, _>>();
+
+        let mut queue =
+            VecDeque::from_iter(next_conditions.swap_remove(&ConditionId::START).into_iter());
+        num_paths_stats[ConditionId::START] = 1;
+        let mut decision_end_nodes = Vec::new();
+        while let Some(branch) = queue.pop_front() {
+            let MCDCBranchSpan {
+                span: _,
+                condition_info: ConditionInfo { condition_id, true_next_id, false_next_id },
+                markers: _,
+                false_index,
+                true_index,
+            } = branch;
+            let this_paths_count = num_paths_stats[*condition_id];
+            for (next, index) in [(false_next_id, false_index), (true_next_id, true_index)] {
+                if let Some(next_id) = next {
+                    let next_paths_count = &mut num_paths_stats[*next_id];
+                    *index = *next_paths_count;
+                    *next_paths_count = next_paths_count.saturating_add(this_paths_count);
+                    let next_indegree = &mut indegree_stats[*next_id];
+                    *next_indegree -= 1;
+                    if *next_indegree == 0 {
+                        queue.push_back(next_conditions.swap_remove(next_id).expect(
+                            "conditions with non-zero indegree before must be in next_conditions",
+                        ));
+                    }
+                } else {
+                    decision_end_nodes.push((this_paths_count, *condition_id, index));
+                }
+            }
+        }
+        assert!(next_conditions.is_empty(), "the decision tree has untouched nodes");
+        let mut cur_idx = 0;
+        // LLVM hopes the end nodes is sorted in ascending order by `num_paths`.
+        decision_end_nodes.sort_by_key(|(num_paths, _, _)| usize::MAX - *num_paths);
+        for (num_paths, condition_id, index) in decision_end_nodes {
+            assert_eq!(
+                num_paths, num_paths_stats[condition_id],
+                "end nodes should not be updated since they were visited"
+            );
+            assert_eq!(*index, usize::MAX, "end nodes should not be assigned index before");
+            *index = cur_idx;
+            cur_idx += num_paths;
+        }
+        decision.num_test_vectors = cur_idx;
     }
 }
 
@@ -323,7 +401,7 @@ impl MCDCInfoBuilder {
             }
             // Ignore decisions with only one condition given that mcdc for them is completely equivalent to branch coverage.
             2..=MAX_CONDITIONS_IN_DECISION => {
-                let info = MCDCTargetInfo { decision, conditions, nested_decisions_id: vec![] };
+                let info = MCDCTargetInfo::new(decision, conditions);
                 Some(self.mcdc_targets.entry(id).or_insert(info))
             }
             _ => {

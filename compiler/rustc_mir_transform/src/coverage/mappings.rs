@@ -39,6 +39,7 @@ pub(super) struct MCDCBranch {
     pub(super) span: Span,
     pub(super) branch_bcbs: MCDCBranchBlocks,
     pub(super) condition_info: ConditionInfo,
+    pub(super) indices: [usize; 2],
 }
 
 #[derive(Debug)]
@@ -53,7 +54,8 @@ pub(super) enum MCDCBranchBlocks {
 pub(super) struct MCDCDecision {
     pub(super) span: Span,
     pub(super) end_bcbs: BTreeSet<BasicCoverageBlock>,
-    pub(super) bitmap_idx: u32,
+    pub(super) bitmap_idx: usize,
+    pub(super) num_test_vectors: usize,
     pub(super) decision_depth: u16,
 }
 
@@ -61,7 +63,7 @@ pub(super) struct MCDCDecision {
 pub(super) struct ExtractedMappings {
     pub(super) code_mappings: Vec<CodeMapping>,
     pub(super) branch_pairs: Vec<BranchPair>,
-    pub(super) mcdc_bitmap_bytes: u32,
+    pub(super) mcdc_bitmap_bits: usize,
     pub(super) mcdc_degraded_branches: Vec<MCDCBranch>,
     pub(super) mcdc_mappings: Vec<(MCDCDecision, Vec<MCDCBranch>)>,
 }
@@ -109,7 +111,7 @@ pub(super) fn extract_all_mapping_info_from_mir<'tcx>(
     ExtractedMappings {
         code_mappings,
         branch_pairs,
-        mcdc_bitmap_bytes: 0, // Calculated in `coverage::create_mappings`
+        mcdc_bitmap_bits: 0, // Calculated in `coverage::create_mappings`
         mcdc_degraded_branches,
         mcdc_mappings,
     }
@@ -124,7 +126,7 @@ impl ExtractedMappings {
         let Self {
             code_mappings,
             branch_pairs,
-            mcdc_bitmap_bytes: _,
+            mcdc_bitmap_bits: _,
             mcdc_degraded_branches,
             mcdc_mappings,
         } = self;
@@ -263,19 +265,24 @@ pub(super) fn extract_mcdc_mappings(
         Some((span, first_bcbs, second_bcbs))
     };
 
-    let extract_branch_mapping =
-        |&mir::coverage::MCDCBranchSpan { span: raw_span, condition_info, ref markers }| {
-            let (span, branch_bcbs) = match markers {
-                MCDCBranchMarkers::Boolean(true_marker, false_marker) => {
-                    let (span, true_bcb, false_bcb) =
-                        check_branch_bcb(raw_span, &[*true_marker], &[*false_marker])?;
-                    (span, MCDCBranchBlocks::Boolean(true_bcb[0], false_bcb[0]))
-                }
-                MCDCBranchMarkers::PatternMatching => unimplemented!("not implemented yet"),
-            };
-
-            Some(MCDCBranch { span, branch_bcbs, condition_info })
+    let extract_branch_mapping = |&mir::coverage::MCDCBranchSpan {
+                                      span: raw_span,
+                                      condition_info,
+                                      ref markers,
+                                      false_index,
+                                      true_index,
+                                  }| {
+        let (span, branch_bcbs) = match markers {
+            MCDCBranchMarkers::Boolean(true_marker, false_marker) => {
+                let (span, true_bcb, false_bcb) =
+                    check_branch_bcb(raw_span, &[*true_marker], &[*false_marker])?;
+                (span, MCDCBranchBlocks::Boolean(true_bcb[0], false_bcb[0]))
+            }
+            MCDCBranchMarkers::PatternMatching => unimplemented!("not implemented yet"),
         };
+
+        Some(MCDCBranch { span, branch_bcbs, condition_info, indices: [false_index, true_index] })
+    };
 
     mcdc_degraded_branches
         .extend(branch_info.mcdc_degraded_spans.iter().filter_map(extract_branch_mapping));
@@ -295,7 +302,8 @@ pub(super) fn extract_mcdc_mappings(
             MCDCDecision {
                 span,
                 end_bcbs,
-                bitmap_idx: 0, // Assigned in `coverage::create_mappings`
+                bitmap_idx: 0, // Changed in `coverage::create_mappings`
+                num_test_vectors: decision.num_test_vectors,
                 decision_depth: decision.decision_depth,
             },
             branch_mappings,

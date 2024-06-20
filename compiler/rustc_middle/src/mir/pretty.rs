@@ -503,18 +503,22 @@ fn write_coverage_branch_info(
         )?;
     }
 
-    for (coverage::MCDCDecisionSpan { span, end_markers, decision_depth }, conditions) in mcdc_spans
+    for (
+        coverage::MCDCDecisionSpan { span, end_markers, decision_depth, num_test_vectors },
+        conditions,
+    ) in mcdc_spans
     {
         let num_conditions = conditions.len();
         writeln!(
             w,
-            "{INDENT}coverage mcdc decision {{ num_conditions: {num_conditions:?}, end: {end_markers:?}, depth: {decision_depth:?} }} => {span:?}"
+            "{INDENT}coverage mcdc decision {{ num_conditions: {num_conditions:?}, end: {end_markers:?}, depth: {decision_depth:?}, num_test_vectors: {num_test_vectors} }} => {span:?}"
         )?;
-        for coverage::MCDCBranchSpan { span, condition_info, markers } in conditions {
+        for coverage::MCDCBranchSpan { span, condition_info, markers, false_index, true_index } in
+            conditions
+        {
             writeln!(
                 w,
-                "{INDENT}coverage mcdc branch {{ condition_id: {:?}, markers: {markers:?} }} => {span:?}",
-                condition_info.condition_id
+                "{INDENT}coverage mcdc branch {{ condition_info: {condition_info:?}, markers: {markers:?}, indices: {{ false: {false_index}, true: {true_index} }} }} => {span:?}",
             )?;
         }
     }
