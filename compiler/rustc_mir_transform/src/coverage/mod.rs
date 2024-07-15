@@ -76,7 +76,7 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
 
     ////////////////////////////////////////////////////
     // Extract coverage spans and other mapping info from MIR.
-    let mut extracted_mappings = mappings::extract_all_mapping_info_from_mir(
+    let extracted_mappings = mappings::extract_all_mapping_info_from_mir(
         tcx,
         mir_body,
         &hir_info,
@@ -103,7 +103,7 @@ fn instrument_function_for_coverage<'tcx>(tcx: TyCtxt<'tcx>, mir_body: &mut mir:
         mir_body,
         tcx,
         &hir_info,
-        &mut extracted_mappings,
+        &extracted_mappings,
         &basic_coverage_blocks,
         &mut coverage_counters,
     );
@@ -148,7 +148,7 @@ fn create_mappings<'tcx>(
     mir_body: &mut mir::Body<'tcx>,
     tcx: TyCtxt<'tcx>,
     hir_info: &ExtractedHirInfo,
-    extracted_mappings: &mut ExtractedMappings,
+    extracted_mappings: &ExtractedMappings,
     basic_coverage_blocks: &CoverageGraph,
     coverage_counters: &mut CoverageCounters,
 ) -> Vec<Mapping> {
@@ -241,12 +241,7 @@ fn create_mappings<'tcx>(
         let conditions = branches
             .into_iter()
             .filter_map(
-                |&mut mappings::MCDCBranch {
-                     span,
-                     ref true_bcbs,
-                     ref false_bcbs,
-                     condition_info,
-                 }| {
+                |&mappings::MCDCBranch { span, ref true_bcbs, ref false_bcbs, condition_info }| {
                     let code_region = region_for_span(span)?;
                     let true_term = term_for_bcbs(true_bcbs);
                     let false_term = term_for_bcbs(false_bcbs);
